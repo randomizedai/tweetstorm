@@ -8,7 +8,6 @@ All the database handling
 import MySQLdb as mdb
 from util import *
 from datetime import datetime
-from twisted.words.xish.xpathparser import print_error
 
 '''
 function for putting a whole file of data into database

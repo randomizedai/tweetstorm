@@ -14,6 +14,7 @@ import ntpath
 import uuid
 import os
 import sys
+import traceback
 
 
 def print_exec_error(worker_id):
