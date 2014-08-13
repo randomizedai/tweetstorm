@@ -73,11 +73,27 @@ def create_table (con,table_name, fields_dict,debug = False):
     cur.execute(query)
     cur.close()    
         
-def select_from_table(con,worker_id,table_name,select_cols,bool_dict,order_by=None, limit=None,count="one",debug=False):
+ 
+def general_select_query(con,worker_id,query,count="one",debug=False):
+    if debug:
+        print "taskid--" + str(worker_id) + "  " + query
     cur = con.cursor(mdb.cursors.DictCursor)
+    cur.execute(query)
+    ans = None
+    if count == "one":
+        ans = cur.fetchone()
+    else:
+        ans = cur.fetchall()
+    cur.close()
+    return ans            
+        
+def select_from_table(con,worker_id,table_name,select_cols,bool_dict,having_dict={},order_by=None, limit=None,count="one",debug=False):
+    cur = con.cursor(mdb.cursors.DictCursor)
+    having_string = bool_string(" HAVING ",create_assignment_string(having_dict, " AND "))
+    where_string = bool_string(" WHERE ",create_assignment_string(bool_dict, " AND "))
     order_by_string = bool_string(" ORDER BY ", order_by)
     limit_string = bool_string(" LIMIT ", limit)
-    query = "SELECT " + select_cols + " FROM " + table_name + " WHERE " + create_assignment_string(bool_dict, " AND ") + order_by_string + limit_string
+    query = "SELECT " + select_cols + " FROM " + table_name + where_string + having_string + order_by_string + limit_string
     if debug:
         print "taskid--" + str(worker_id) + "  " + query
     cur.execute(query)
