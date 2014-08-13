@@ -8,6 +8,7 @@ All the database handling
 import MySQLdb as mdb
 from util import *
 from datetime import datetime
+from twisted.words.xish.xpathparser import print_error
 
 '''
 function for putting a whole file of data into database
@@ -87,7 +88,7 @@ def general_select_query(con,worker_id,query,count="one",debug=False):
     cur.close()
     return ans            
         
-def select_from_table(con,worker_id,table_name,select_cols,bool_dict,having_dict={},order_by=None, limit=None,count="one",debug=False):
+def select_from_table(con,worker_id,table_name,select_cols,bool_dict,order_by=None, limit=None,count="one",having_dict={},debug=False):
     cur = con.cursor(mdb.cursors.DictCursor)
     having_string = bool_string(" HAVING ",create_assignment_string(having_dict, " AND "))
     where_string = bool_string(" WHERE ",create_assignment_string(bool_dict, " AND "))
@@ -162,6 +163,7 @@ def get_active_row(con,worker_id,table_name,bool_dict={},debug=False):
         
         return ("success",row_candidate)
     except Exception, e:
+       print_exec_error(worker_id)
        return ("exception",e)
 
 
@@ -199,18 +201,24 @@ def get_user(con,worker_id,debug=False):
     ru_status,row_user = get_active_row(con,worker_id,"users",bool_dict={},debug=debug)
     if ru_status == "success" and row_user:
         return row_user
-        
+    else:
+        print "taskid--" + str(worker_id) + "  In getting User -->" + ru_status
+    
        
 def get_keyword(con,worker_id,debug=False):
     rk_status,row_kw = get_active_row(con,worker_id,"keywords",bool_dict={},debug=debug)
     if rk_status == "success" and row_kw:
         return row_kw
+    else:
+        print "taskid--" + str(worker_id) + "  In getting Keyword -->" + rk_status
 
 def get_auth(con,worker_id,debug=False):
     auth_status,row_auth = get_active_row(con,worker_id,"twitter_auths",bool_dict={},debug=debug)
     if auth_status == "success" and row_auth:
         return row_auth   
-    
+    else:
+        print "taskid--" + str(worker_id) + "  In getting Auth -->" + auth_status
+
 
 def get_file(con,worker_id,download_dir,machine_name,date,hour,chunk_size,debug=False):
     bool_dict = {"machine_name" : machine_name, "date_string" : date, "hour_string" : hour, "size<":chunk_size}

@@ -13,6 +13,15 @@ import socket
 import ntpath
 import uuid
 import os
+import sys
+
+
+def print_exec_error(worker_id):
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    print("********#####EXCEPTION#####********* taskid--"+ str(worker_id),exc_type, fname, exc_tb.tb_lineno)
+        
+
 
 def get_absolute_path(relative_path):
     dir = os.path.dirname(__file__)
