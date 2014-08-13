@@ -10,7 +10,7 @@ import numpy as np
 import time
 from database import *
 from util import *
-texcommand = "/usr/texbin/pdflatex"
+texcommand = "/usr/bin/pdflatex"
 import os
 
 def latex_red(string):
