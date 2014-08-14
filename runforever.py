@@ -16,7 +16,9 @@ config = read_config_file(get_absolute_path("config.ini"))
 
 def main_loop(debug=False):
     con = None
-    count = 1
+    con = test_and_get_mysql_con(0, con, config, debug)
+    ans = select_from_table(con,0,"MAX(worker_id) as max from download_logs")
+    count = ans['max'] + 1 
     generate_report_nth_hour = 0.5
     last_report_generated_time = time.time()
     worker_id = 0
