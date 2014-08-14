@@ -73,12 +73,13 @@ def get_search_tweets_recursive(client,worker_id,query_type,query,wait_time_in_s
         time.sleep(wait_time_in_seconds)    
         
         if status == "success":
-            if debug and response:
-                print "taskid--" + str(worker_id) + " New tweets--" + str(len(response))
             ans_tweets += response
             new_min_id = compute_min_id(response)
             new_max_id = compute_max_id(response)
             
+            if debug and response:
+                print "taskid--" + str(worker_id) + " New tweets--" + str(len(response))
+                print "taskid--" + str(worker_id)  + " New Max Id--" + str(new_max_id) + " New Min Id--" + str(new_min_id)
             if maxid and sinceid: ## both query (see the response to decide)
                 if sinceid == new_min_id and maxid == new_max_id:
                     break
