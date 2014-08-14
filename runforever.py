@@ -17,9 +17,10 @@ config = read_config_file(get_absolute_path("config.ini"))
 def main_loop(debug=False):
     con = None
     con = test_and_get_mysql_con(0, con, config, debug)
-    ans = select_from_table(con,0,"MAX(worker_id) as max from download_logs")
-    count = ans['max'] + 1 
-    generate_report_nth_hour = 0.5
+    ans1 = select_from_table(con,0,"download_logs","MAX(worker_id) as max",{},debug=True)
+    ans2 = select_from_table(con,0,"twitter_auths","MAX(active_status) as max",{},debug=True)
+    count = max(ans1['max'],ans2['max']) + 1 
+    generate_report_nth_hour = 3
     last_report_generated_time = time.time()
     worker_id = 0
     while 1:

@@ -10,7 +10,7 @@ import numpy as np
 import time
 from database import *
 from util import *
-texcommand = "/usr/bin/pdflatex"
+texcommand = "/usr/texbin/pdflatex"
 import os
 
 def latex_red(string):
@@ -45,7 +45,7 @@ def twitter_accounts_string(con,debug=False):
 
 def total_users_string(con,debug=False):    
     try:
-        ans = select_from_table(con, 0, "users", "COUNT(*) as count", {}, debug=debug)
+        ans = select_from_table(con, 0, "users", "COUNT(distinct screenname) as count", {}, debug=debug)
         total_users = ans['count']
         return "Total Users - - " + str(total_users)
     except Exception,e:
@@ -53,7 +53,7 @@ def total_users_string(con,debug=False):
 
 def total_keywords_string(con,debug=False):    
     try:
-        ans = select_from_table(con, 0, "keywords", "COUNT(*) as count", {}, debug=debug)
+        ans = select_from_table(con, 0, "keywords", "COUNT(distinct keyword) as count", {}, debug=debug)
         total_users = ans['count']
         return "Total Keywords - - " + str(total_users)
     except Exception,e:
@@ -121,7 +121,7 @@ def generate_pdf(filename, clean=True):
         pass        
 
 def get_top_users(con,starttime,endtime,debug=False):
-    query = "select u.screenname as sn,sum(dl.count) as sum from download_logs as dl, users as u \
+    query = "select distinct(u.screenname) as sn,sum(dl.count) as sum from download_logs as dl, users as u \
       where dl.query_id = u.id and dl.query_type = \"users\" and dl.download_time > \'" + starttime + "\' and dl.download_time < \'" + endtime + "\'\
       group by u.id order by sum desc limit 10"
     ans =  general_select_query(con, 0, query, count ="all",debug=debug)
@@ -134,7 +134,7 @@ def get_top_users(con,starttime,endtime,debug=False):
     return s           
 
 def get_top_keywords(con,starttime,endtime,debug=False):
-    query = "select u.keyword as sn,sum(dl.count) as sum from download_logs as dl, keywords as u \
+    query = "select distinct(u.keyword) as sn,sum(dl.count) as sum from download_logs as dl, keywords as u \
       where dl.query_id = u.id and dl.query_type = \"keywords\" and dl.download_time > \'" + starttime + "\' and dl.download_time < \'" + endtime + "\'\
       group by u.id order by sum desc limit 10"
     ans =  general_select_query(con, 0, query, count ="all",debug=debug)
@@ -239,4 +239,4 @@ def generate_and_send_report(config,last_report_generated_time,cur_time,debug=Fa
 
 if __name__ == '__main__':
     config = read_config_file(get_absolute_path("config.ini"))
-    generate_and_send_report(config, 0, time.time(),True)
+    generate_report(config, 0, time.time(),True)
