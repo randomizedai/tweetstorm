@@ -151,7 +151,7 @@ def get_active_row(con,worker_id,table_name,bool_dict={},debug=False):
         ##get row status
         row_status = select_from_table(con, worker_id, table_name, "active_status", {"id":row_candidate["id"]},debug=debug)            
         if not row_status:
-            return ("lock-failed",None)
+            return ("lock-row-failed",None)
         if debug:
             print "taskid--" + str(worker_id) + " Row Status For Table " + table_name + " -- "  + str(row_status) + "   task_id --" + str(worker_id)
         
@@ -159,8 +159,9 @@ def get_active_row(con,worker_id,table_name,bool_dict={},debug=False):
         if (row_status['active_status'] == worker_id): 
             if debug:
                 print "taskid--" + str(worker_id) +" Received Table " + table_name + " -- for Task_id -- " + str(worker_id)  
-        
-        return ("success",row_candidate)
+            return ("success",row_candidate)
+    
+        return("lock-failed",None)
     except Exception, e:
        print_exec_error(worker_id)
        return ("exception",e)
