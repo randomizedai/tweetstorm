@@ -9,6 +9,7 @@ For making calls to Search API of Twitter
 
 from birdy.twitter import *
 from util import *
+from database import *
 
 def get_client(auth):
     return UserClient(auth['consumer_key'],auth['consumer_secret'],auth['access_token'], auth['access_token_secret'])
@@ -63,7 +64,7 @@ def get_search_tweets_recursive(client,worker_id,query_type,query,wait_time_in_s
     ans_tweets = []
     status = "exception"
     for _ in range(num_tries):    
-        status, response = pick_search_query(client,query_type,query,worker_id,sinceid,maxid,debug)
+        status, response = pick_search_query(client,query_type,query,worker_id,sinceid=sinceid,maxid=maxid,debug=debug)
         
         if debug:
             print "taskid--" + str(worker_id) + " Waiting for " + str(wait_time_in_seconds) + " seconds for further tweets"
@@ -104,4 +105,12 @@ def get_search_tweets_recursive(client,worker_id,query_type,query,wait_time_in_s
        
 
 if __name__ == '__main__':
-    pass
+    con = None
+    config = read_config_file(get_absolute_path("config.ini"))
+    debug = True
+    worker_id = 1
+    con = test_and_get_mysql_con(worker_id, con, config, debug)
+    auth = get_auth(con, worker_id, debug)
+    client = get_client(auth)
+    get_search_tweets_recursive(client, 1, "users",{"screenname":"NASA_NCCS"}, maxid=str(100314166925082624),debug=debug)
+    release_auth(con, worker_id, auth['id'], debug)  

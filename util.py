@@ -87,14 +87,14 @@ def bool_string(desc,value):
 def compute_max_id(tweets):
     ans = 0
     if tweets:
-        ans = max([x['id_str'] for x in tweets])
-    return ans
+        ans = max([long(x['id_str']) for x in tweets])
+    return str(ans)
 
 def compute_min_id(tweets):
     ans = 0
     if tweets:
-        ans = min([x['id_str'] for x in tweets])
-    return ans
+        ans = min([long(x['id_str']) for x in tweets])
+    return str(ans)
 
 def compute_max_time(tweets):
     ans = 0
