@@ -1,3 +1,6 @@
 apscheduler
 pylatex
 filelock
+celery
+MySQLdb
+birdy
