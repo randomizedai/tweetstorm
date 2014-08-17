@@ -42,7 +42,7 @@ def main_loop(debug=False):
         
         if (cur_time - last_cleaned_auths_time) / (60*60) > clean_auths_hour:
             try:
-                clean_stuch_auths(con,debug)
+                clean_stuch_auths(con,worker_id,debug=True)
             except Exception,e:
                 print "Can't clean stuck auths"
                 print_exec_error(0)                
