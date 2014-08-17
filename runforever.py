@@ -26,11 +26,15 @@ def main_loop(debug=False):
     while 1:
         cur_time = time.time()
         if ( cur_time - last_report_generated_time ) / (60 * 60) > generate_report_nth_hour:
-            generate_and_send_report(config,last_report_generated_time,cur_time)
-            print "generating report at" 
-            print cur_time
-            last_report_generated_time = cur_time
-        
+            try:
+                generate_and_send_report(config,last_report_generated_time,cur_time)
+                print "generating report at" 
+                print cur_time
+                last_report_generated_time = cur_time
+            except Exception,e:
+                print "Exception in Generating report"
+                print_exec_error(0)
+                    
         con = test_and_get_mysql_con(0, con, config,debug=False)
         ans = select_from_table(con,worker_id, "twitter_auths", "COUNT(*) as count", {"active_status" : 0}, count="one", debug=False)
         print get_current_timestamp() + " --> Starting " + str(ans['count']) + " workers"
@@ -38,7 +42,7 @@ def main_loop(debug=False):
             worker_main.delay(count,debug=True)
             count = count + 1
             time.sleep(0.5)
-        time.sleep(5)
+        time.sleep(10)
 
 if __name__ == '__main__':
     try:
