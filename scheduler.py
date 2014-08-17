@@ -21,7 +21,7 @@ def last_accessed_first(con,worker_id,debug=False):
         if user and keyword:
             user_last_access_time = user['last_access']
             keyword_last_access_time = keyword['last_access']
-            if user_last_access_time < keyword_last_access_time:
+            if (user_last_access_time == None and keyword_last_access_time) or (user_last_access_time < keyword_last_access_time):
                 release_keyword(con, worker_id, keyword["id"], debug)
                 return ("users",user)
             else:
