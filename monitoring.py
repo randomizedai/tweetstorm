@@ -204,7 +204,7 @@ def send_mail(smtpserver,username,password,from_address,subject,recipients,attac
   emailMsg = email.MIMEMultipart.MIMEMultipart('alternative')
   emailMsg['Subject'] = subject
   emailMsg['From'] = from_address
-  emailMsg['To'] = recipients
+  emailMsg['To'] = ", ".join(recipients)
   emailMsg.attach(email.mime.text.MIMEText(html,'html'))
 
   # now attach the files ( { filetype : filepath})

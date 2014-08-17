@@ -6,7 +6,7 @@ Created on Aug 6, 2014
 Scheduling Algorithms to pick the next query
 '''
 from database import *
-
+from util import *
 # query type corresponds to table_name
 def last_accessed_first(con,worker_id,debug=False):
     try:
@@ -33,6 +33,7 @@ def last_accessed_first(con,worker_id,debug=False):
             return ("users",user)
         return
     except Exception, e:
+        print_exec_error(worker_id)
         try:
             if user:
                 release_user(con, worker_id, user["id"], debug)

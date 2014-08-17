@@ -240,4 +240,5 @@ def get_file(con,worker_id,download_dir,machine_name,date,hour,chunk_size,debug=
     return file_status,file_row    
         
 if __name__ == '__main__':
-    pass
+    con = None
+    
