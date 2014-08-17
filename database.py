@@ -241,10 +241,10 @@ def get_file(con,worker_id,download_dir,machine_name,date,hour,chunk_size,debug=
  
 def clean_stuck_auths(con,worker_id,debug=False):
     ans = general_select_query(con,worker_id , "select active_status, id, round(TIME_TO_SEC(TIMEDIFF(CURRENT_TIMESTAMP,\
-     last_access))/60,2)  as minutes from twitter_auths having minutes > 20", count="all", debug=debug) 
+     last_access))/60,2)  as minutes from twitter_auths having minutes > 20 and active_status > 0", count="all", debug=debug) 
     for auth in ans:
         for table in ["twitter_auths","users","keywords","files"]:
-            update_table(con, worker_id, "twitter_auths", {"active_status" : 0}, {"active_status":auth['active_status']}, debug=debug)
+            update_table(con, worker_id, table, {"active_status" : 0}, {"active_status":auth['active_status']}, debug=debug)
         
 if __name__ == '__main__':
     con = None
