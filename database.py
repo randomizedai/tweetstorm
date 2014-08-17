@@ -179,16 +179,16 @@ def reset_table(con,worker_id,table_name,debug=False):
     
     
 def release_user(con,worker_id,id,debug=False):
-    update_table(con, worker_id, "users", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id}, debug)   
+    update_table(con, worker_id, "users", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id,"active_status" : worker_id}, debug)   
        
 def release_keyword(con,worker_id,id,debug=False):
-    update_table(con, worker_id, "keywords", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id}, debug)   
+    update_table(con, worker_id, "keywords", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id,"active_status" : worker_id}, debug)   
 
 def release_auth(con,worker_id,id,debug=False):
-    update_table(con, worker_id, "twitter_auths", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id}, debug)   
+    update_table(con, worker_id, "twitter_auths", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id,"active_status" : worker_id}, debug)   
 
 def release_file(con,worker_id,id,size,debug=False):
-    update_table(con, worker_id, "files", {"active_status" : 0, 'last_access' : str(datetime.now()), "size" : size}, {"id" : id}, debug)   
+    update_table(con, worker_id, "files", {"active_status" : 0, 'last_access' : str(datetime.now()), "size" : size}, {"id" : id,"active_status" : worker_id}, debug)   
 
 def release_query(con,worker_id,query_type,id,debug=False):
     if query_type == "users":
@@ -238,6 +238,13 @@ def get_file(con,worker_id,download_dir,machine_name,date,hour,chunk_size,debug=
         if file_row and file_row["active_status"] == worker_id:
             file_status = "success"
     return file_status,file_row    
+ 
+def clean_stuck_auths(con,worker_id,debug=False):
+    ans = general_select_query(con,worker_id , "select active_status, id, round(TIME_TO_SEC(TIMEDIFF(CURRENT_TIMESTAMP,\
+     last_access))/60,2)  as minutes from twitter_auths having minutes > 20", count="all", debug) 
+    for auth in ans:
+        for table in ["twitter_auths","users","keywords","files"]:
+            update_table(con, worker_id, "twitter_auths", {"active_status" : 0}, {"active_status":auth['active_status']}, debug)
         
 if __name__ == '__main__':
     con = None

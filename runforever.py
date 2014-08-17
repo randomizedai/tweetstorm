@@ -14,13 +14,18 @@ from celery.task.control import discard_all
 
 config = read_config_file(get_absolute_path("config.ini"))
 
+
+
+
 def main_loop(debug=False):
     con = None
     con = test_and_get_mysql_con(0, con, config, debug)
     ans1 = select_from_table(con,0,"download_logs","MAX(worker_id) as max",{},debug=True)
     ans2 = select_from_table(con,0,"twitter_auths","MAX(active_status) as max",{},debug=True)
     count = max(ans1['max'],ans2['max']) + 1 
-    generate_report_nth_hour = 0.5
+    generate_report_nth_hour = 6
+    clean_auths_hour = 1
+    last_cleaned_auths_time = time.time()
     last_report_generated_time = time.time()
     worker_id = 0
     while 1:
@@ -34,7 +39,14 @@ def main_loop(debug=False):
             except Exception,e:
                 print "Exception in Generating report"
                 print_exec_error(0)
-                    
+        
+        if (cur_time - last_cleaned_auths_time) / (60*60) > clean_auths_hour:
+            try:
+                clean_stuch_auths(con)
+            except Exception,e:
+                print "Can't clean stuck auths"
+                print_exec_error(0)                
+        
         con = test_and_get_mysql_con(0, con, config,debug=False)
         ans = select_from_table(con,worker_id, "twitter_auths", "COUNT(*) as count", {"active_status" : 0}, count="one", debug=False)
         print get_current_timestamp() + " --> Starting " + str(ans['count']) + " workers"
