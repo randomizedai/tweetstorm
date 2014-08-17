@@ -77,9 +77,11 @@ def worker_main(worker_id,debug=False):
         if debug:
             if not auth:
                 print "taskid--" + str(worker_id) + "  No Auth Received"
+                
             else:
                 print "taskid--" + str(worker_id) + " Auth received -- " + str(auth)
-    
+        if not auth:
+            raise Exception("No Auth received")
         scheduler_func = last_accessed_first
         
         if debug:
