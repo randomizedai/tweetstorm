@@ -204,7 +204,7 @@ def send_mail(smtpserver,username,password,from_address,subject,recipients,attac
   emailMsg = email.MIMEMultipart.MIMEMultipart('alternative')
   emailMsg['Subject'] = subject
   emailMsg['From'] = from_address
-  emailMsg['To'] = ", ".join(recipients)
+  emailMsg['To'] = recipients
   emailMsg.attach(email.mime.text.MIMEText(html,'html'))
 
   # now attach the files ( { filetype : filepath})
@@ -221,7 +221,8 @@ def send_mail(smtpserver,username,password,from_address,subject,recipients,attac
   server = smtplib.SMTP(smtpserver)
   server.starttls()
   server.login(username,password)
-  server.sendmail(from_address,recipients,emailMsg.as_string())
+  for x in recipients.split(","):
+      server.sendmail(from_address,x.strip(),emailMsg.as_string())
   server.quit()
 
 

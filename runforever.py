@@ -20,7 +20,7 @@ def main_loop(debug=False):
     ans1 = select_from_table(con,0,"download_logs","MAX(worker_id) as max",{},debug=True)
     ans2 = select_from_table(con,0,"twitter_auths","MAX(active_status) as max",{},debug=True)
     count = max(ans1['max'],ans2['max']) + 1 
-    generate_report_nth_hour = 3
+    generate_report_nth_hour = 0.5
     last_report_generated_time = time.time()
     worker_id = 0
     while 1:
