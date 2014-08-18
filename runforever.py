@@ -24,7 +24,7 @@ def main_loop(debug=False):
     ans2 = select_from_table(con,0,"twitter_auths","MAX(active_status) as max",{},debug=True)
     count = max(ans1['max'],ans2['max']) + 1 
     generate_report_nth_hour = 6
-    clean_auths_hour = 1
+    clean_auths_hour = 0.083  #(5 minutes)
     last_cleaned_auths_time = time.time()
     last_report_generated_time = time.time()
     worker_id = 0
@@ -41,11 +41,8 @@ def main_loop(debug=False):
                 print_exec_error(0)
         
         if (cur_time - last_cleaned_auths_time) / (60*60) > clean_auths_hour:
-            try:
-                clean_stuch_auths(con,worker_id,debug=True)
-            except Exception,e:
-                print "Can't clean stuck auths"
-                print_exec_error(0)                
+            clean_stuch_auths(con,worker_id,debug=True)
+                  
         
         con = test_and_get_mysql_con(0, con, config,debug=False)
         ans = select_from_table(con,worker_id, "twitter_auths", "COUNT(*) as count", {"active_status" : 0}, count="one", debug=False)
@@ -54,7 +51,7 @@ def main_loop(debug=False):
             worker_main.delay(count,debug=True)
             count = count + 1
             time.sleep(0.5)
-        time.sleep(10)
+        time.sleep(5)
 
 if __name__ == '__main__':
     try:
