@@ -41,7 +41,7 @@ def main_loop(debug=False):
                 print_exec_error(0)
         
         if (cur_time - last_cleaned_auths_time) / (60*60) > clean_auths_hour:
-            clean_stuch_auths(con,worker_id,debug=True)
+            clean_stuck_auths(con,worker_id,debug=True)
                   
         
         con = test_and_get_mysql_con(0, con, config,debug=False)
