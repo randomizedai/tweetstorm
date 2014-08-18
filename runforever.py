@@ -53,6 +53,7 @@ def main_loop(debug=False):
             count = count + 1
             time.sleep(0.5)
         time.sleep(5)
+        sys.stdout.flush()
 
 if __name__ == '__main__':
     try:
