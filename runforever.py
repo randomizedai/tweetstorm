@@ -40,9 +40,10 @@ def main_loop(debug=False):
                 print "Exception in Generating report"
                 print_exec_error(0)
         
+        cur_time = time.time()
         if (cur_time - last_cleaned_auths_time) / (60*60) > clean_auths_hour:
             clean_stuck_auths(con,worker_id,debug=True)
-                  
+            lat_cleaned_auths_time = cur_time      
         
         con = test_and_get_mysql_con(0, con, config,debug=False)
         ans = select_from_table(con,worker_id, "twitter_auths", "COUNT(*) as count", {"active_status" : 0}, count="one", debug=False)
