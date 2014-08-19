@@ -10,15 +10,21 @@ For making calls to Search API of Twitter
 from birdy.twitter import *
 from util import *
 from database import *
+import time
+import timeout_decorator
 
 def get_client(auth):
     return UserClient(auth['consumer_key'],auth['consumer_secret'],auth['access_token'], auth['access_token_secret'])
 
+@timeout_decorator(60)
 def get_user_tweets(client,screenname, worker_id, sinceid=None,maxid=None,debug=False):
     try:
         if debug:
             print "taskid--" + str(worker_id) + "  User Query -->  screenname -- " + screenname + " sinceid -- " + str(sinceid) + " maxid -- " + str(maxid)  
         response = client.api.statuses.user_timeline.get(screen_name=screenname,since_id=sinceid,max_id=maxid,count=5000)
+        if debug:
+            print "taskid--" + str(worker_id) + " User Query -- Header --> " + str(response.headers)
+        
         if response.data:
             return ("success",response.data)
         else:
@@ -26,12 +32,14 @@ def get_user_tweets(client,screenname, worker_id, sinceid=None,maxid=None,debug=
     except Exception, e:
         return ("exception",e)
 
-
+@timeout_decorator(60)
 def get_keyword_tweets(client,search_keyword,worker_id,sinceid=None,maxid=None,debug=False):
     try:
         if debug:
             print "taskid--" + str(worker_id) + "  Keyword Query -->  keyword -- " + search_keyword + " sinceid -- " + str(sinceid) + " maxid -- " + str(maxid)  
         response = client.api.search.tweets.get(q=search_keyword,since_id=sinceid,max_id=maxid,count=5000)
+        if debug:
+           print "taskid--" + str(worker_id) + " Keyword Query -- Header --> " + str(response.headers) 
         if response.data.values():
             ans_tweets = response.data.values()[1]
             return ("success",ans_tweets)
@@ -41,11 +49,13 @@ def get_keyword_tweets(client,search_keyword,worker_id,sinceid=None,maxid=None,d
         return ("exception",e)
 
 def pick_search_query(client,query_type,query,worker_id,sinceid=None,maxid=None,debug=False):
-    if query_type == "users":
-        return get_user_tweets(client,query['screenname'],worker_id, sinceid, maxid,debug)
-    elif query_type == "keywords":
-        return get_keyword_tweets(client,query['keyword'], worker_id, sinceid, maxid,debug)
-    
+    try:
+        if query_type == "users":
+            return get_user_tweets(client,query['screenname'],worker_id, sinceid, maxid,debug)
+        elif query_type == "keywords":
+            return get_keyword_tweets(client,query['keyword'], worker_id, sinceid, maxid,debug)
+    except Exception,e:
+        return "no-data",[]
 
 
 def get_search_tweets_recursive(client,worker_id,query_type,query,wait_time_in_seconds=5.5,num_tries=10,sinceid=None,maxid=None,debug=False):

@@ -4,3 +4,4 @@ filelock
 celery
 MySQLdb
 birdy
+timeout-decorator
