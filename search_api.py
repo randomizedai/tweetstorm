@@ -16,7 +16,7 @@ import timeout_decorator
 def get_client(auth):
     return UserClient(auth['consumer_key'],auth['consumer_secret'],auth['access_token'], auth['access_token_secret'])
 
-@timeout_decorator(60)
+@timeout_decorator.timeout(60)
 def get_user_tweets(client,screenname, worker_id, sinceid=None,maxid=None,debug=False):
     try:
         if debug:
@@ -32,7 +32,7 @@ def get_user_tweets(client,screenname, worker_id, sinceid=None,maxid=None,debug=
     except Exception, e:
         return ("exception",e)
 
-@timeout_decorator(60)
+@timeout_decorator.timeout(60)
 def get_keyword_tweets(client,search_keyword,worker_id,sinceid=None,maxid=None,debug=False):
     try:
         if debug:
