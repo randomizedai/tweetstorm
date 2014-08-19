@@ -54,13 +54,13 @@ def put_download_logs(query_type,query,status,results,worker_id,con,file_id,debu
     dictv['status'] = status
     dictv['worker_id'] = worker_id
     if status == "exception":
-        dictv['exception_description'] = str(results)[0:500]
+        dictv['exception_description'] = ""
     insert_into_table(con, worker_id, "download_logs", dictv, debug)    
 
         
 def process_output(query_type,query,status, results, worker_id, con, file_handle,file_id,debug=False):
     
-    if ( status == "success" ) or (status == "no-data" and len(results) > 0):
+    if len(results) > 0:
         new_minid = compute_min_id(results)
         new_maxid = compute_max_id(results)
         dump_tweets_into_file(file_handle,results)

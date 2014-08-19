@@ -8,7 +8,7 @@ All the database handling
 import MySQLdb as mdb
 from util import *
 from datetime import datetime
-
+import sys
 '''
 function for putting a whole file of data into database
 
@@ -249,6 +249,12 @@ def clean_stuck_auths(con,worker_id,debug=False):
     except Exception,e:
         print "Can't clean stuck auths"
         print_exec_error(0)         
+
 if __name__ == '__main__':
     con = None
-    
+    debug = True
+    fn = sys.argv[1]
+    worker_id = 0
+    config = read_config_file(get_absolute_path("config.ini"))
+    con = test_and_get_mysql_con(worker_id, con, config, debug)
+    insert_file(fn, con, debug)
