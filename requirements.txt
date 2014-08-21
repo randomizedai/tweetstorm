@@ -2,6 +2,7 @@ apscheduler
 pylatex
 filelock
 celery
-MySQLdb
+mysql_python
 birdy
 timeout-decorator
+supervisor
