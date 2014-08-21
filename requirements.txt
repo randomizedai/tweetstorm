@@ -6,3 +6,4 @@ mysql_python
 birdy
 timeout-decorator
 supervisor
+numpy
