@@ -28,6 +28,7 @@ def main_loop(debug=False):
     last_cleaned_auths_time = time.time()
     last_report_generated_time = time.time()
     worker_id = 0
+    first_time = True
     while 1:
         cur_time = time.time()
         if ( cur_time - last_report_generated_time ) / (60 * 60) > generate_report_nth_hour:
@@ -48,11 +49,15 @@ def main_loop(debug=False):
         con = test_and_get_mysql_con(0, con, config,debug=False)
         ans = select_from_table(con,worker_id, "twitter_auths", "COUNT(*) as count", {"active_status" : 0}, count="one", debug=False)
         print get_current_timestamp() + " --> Starting " + str(ans['count']) + " workers"
-        for i in range(0,ans['count']):
+        lent = ans['count']
+        if first_time:
+            first_time = False
+            lent = 50
+        for i in range(0,lent):
             worker_main.delay(count,debug=True)
             count = count + 1
             time.sleep(0.5)
-        time.sleep(5)
+        time.sleep(60)
         sys.stdout.flush()
 
 if __name__ == '__main__':
