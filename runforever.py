@@ -32,7 +32,7 @@ def main_loop(debug=False):
     first_report = True
     while 1:
         cur_time = time.time()
-        if (first_report and ( cur_time - last_report_generated_time ) / (60 * 60) > generate_report_nth_hour > 0.25) or  ( cur_time - last_report_generated_time ) / (60 * 60) > generate_report_nth_hour:
+        if (first_report and ( cur_time - last_report_generated_time ) / (60 * 60) > generate_report_nth_hour > 0.15) or  ( cur_time - last_report_generated_time ) / (60 * 60) > generate_report_nth_hour:
             first_report = False
             try:
                 generate_and_send_report(config,last_report_generated_time,cur_time)
@@ -46,7 +46,7 @@ def main_loop(debug=False):
         cur_time = time.time()
         if (cur_time - last_cleaned_auths_time) / (60*60) > clean_auths_hour:
             clean_stuck_auths(con,worker_id,debug=True)
-            lat_cleaned_auths_time = cur_time      
+            last_cleaned_auths_time = cur_time      
         
         con = test_and_get_mysql_con(0, con, config,debug=False)
         ans = select_from_table(con,worker_id, "twitter_auths", "COUNT(*) as count", {"active_status" : 0}, count="one", debug=False)
