@@ -16,7 +16,7 @@ import timeout_decorator
 def get_client(auth):
     return UserClient(auth['consumer_key'],auth['consumer_secret'],auth['access_token'], auth['access_token_secret'])
 
-@timeout_decorator.timeout(60)
+@timeout_decorator.timeout(180)
 def get_user_tweets(client, worker_id, sinceid=None,maxid=None,debug=False,userid=None,screenname=None):
     if screenname == None and userid == None:
         if debug:
@@ -26,7 +26,7 @@ def get_user_tweets(client, worker_id, sinceid=None,maxid=None,debug=False,useri
         try:
             if debug:
                 print "taskid--" + str(worker_id) + "  User Query -->  screenname -- " + screenname + " sinceid -- " + str(sinceid) + " maxid -- " + str(maxid)  
-            response = client.api.statuses.user_timeline.get(screen_name=screenname,since_id=sinceid,max_id=maxid,count=5000)
+            response = client.api.statuses.user_timeline.get(screen_name=screenname,since_id=sinceid,max_id=maxid,count=200)
             if debug:
                 print "taskid--" + str(worker_id) + " User Query -- Header --> " + str(response.headers)
         
@@ -40,7 +40,7 @@ def get_user_tweets(client, worker_id, sinceid=None,maxid=None,debug=False,useri
         try:
             if debug:
                 print "taskid--" + str(worker_id) + "  User Query -->  userid -- " + userid + " sinceid -- " + str(sinceid) + " maxid -- " + str(maxid)  
-            response = client.api.statuses.user_timeline.get(user_id=userid,since_id=sinceid,max_id=maxid,count=5000)
+            response = client.api.statuses.user_timeline.get(user_id=userid,since_id=sinceid,max_id=maxid,count=200)
             if debug:
                 print "taskid--" + str(worker_id) + " User Query -- Header --> " + str(response.headers)
         
@@ -51,12 +51,12 @@ def get_user_tweets(client, worker_id, sinceid=None,maxid=None,debug=False,useri
         except Exception, e:
             return ("exception",e)
 
-@timeout_decorator.timeout(60)
+@timeout_decorator.timeout(180)
 def get_keyword_tweets(client,search_keyword,worker_id,sinceid=None,maxid=None,debug=False):
     try:
         if debug:
             print "taskid--" + str(worker_id) + "  Keyword Query -->  keyword -- " + search_keyword + " sinceid -- " + str(sinceid) + " maxid -- " + str(maxid)  
-        response = client.api.search.tweets.get(q=search_keyword,since_id=sinceid,max_id=maxid,count=5000)
+        response = client.api.search.tweets.get(q=search_keyword,since_id=sinceid,max_id=maxid,count=200)
         if debug:
            print "taskid--" + str(worker_id) + " Keyword Query -- Header --> " + str(response.headers) 
         if response.data.values():
