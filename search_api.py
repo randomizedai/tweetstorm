@@ -17,20 +17,39 @@ def get_client(auth):
     return UserClient(auth['consumer_key'],auth['consumer_secret'],auth['access_token'], auth['access_token_secret'])
 
 @timeout_decorator.timeout(60)
-def get_user_tweets(client,screenname, worker_id, sinceid=None,maxid=None,debug=False):
-    try:
+def get_user_tweets(client, worker_id, sinceid=None,maxid=None,debug=False,userid=None,screenname=None):
+    if screenname == None and userid == None:
         if debug:
-            print "taskid--" + str(worker_id) + "  User Query -->  screenname -- " + screenname + " sinceid -- " + str(sinceid) + " maxid -- " + str(maxid)  
-        response = client.api.statuses.user_timeline.get(screen_name=screenname,since_id=sinceid,max_id=maxid,count=5000)
-        if debug:
-            print "taskid--" + str(worker_id) + " User Query -- Header --> " + str(response.headers)
+            print "taskid--" + str(worker_id) + " Bad Query -- both userid and screenname missing"
+            return ("exception","Bad Query")
+    elif screenname:            
+        try:
+            if debug:
+                print "taskid--" + str(worker_id) + "  User Query -->  screenname -- " + screenname + " sinceid -- " + str(sinceid) + " maxid -- " + str(maxid)  
+            response = client.api.statuses.user_timeline.get(screen_name=screenname,since_id=sinceid,max_id=maxid,count=5000)
+            if debug:
+                print "taskid--" + str(worker_id) + " User Query -- Header --> " + str(response.headers)
         
-        if response.data:
-            return ("success",response.data)
-        else:
-            return ("no-data",response)
-    except Exception, e:
-        return ("exception",e)
+            if response.data:
+                return ("success",response.data)
+            else:
+                return ("no-data",response)
+        except Exception, e:
+            return ("exception",e)
+    else:
+        try:
+            if debug:
+                print "taskid--" + str(worker_id) + "  User Query -->  userid -- " + userid + " sinceid -- " + str(sinceid) + " maxid -- " + str(maxid)  
+            response = client.api.statuses.user_timeline.get(user_id=userid,since_id=sinceid,max_id=maxid,count=5000)
+            if debug:
+                print "taskid--" + str(worker_id) + " User Query -- Header --> " + str(response.headers)
+        
+            if response.data:
+                return ("success",response.data)
+            else:
+                return ("no-data",response)
+        except Exception, e:
+            return ("exception",e)
 
 @timeout_decorator.timeout(60)
 def get_keyword_tweets(client,search_keyword,worker_id,sinceid=None,maxid=None,debug=False):
@@ -51,14 +70,14 @@ def get_keyword_tweets(client,search_keyword,worker_id,sinceid=None,maxid=None,d
 def pick_search_query(client,query_type,query,worker_id,sinceid=None,maxid=None,debug=False):
     try:
         if query_type == "users":
-            return get_user_tweets(client,query['screenname'],worker_id, sinceid, maxid,debug)
+            return get_user_tweets(client,worker_id, sinceid, maxid,debug,screenname=query['screenname'],userid=query['userid'])
         elif query_type == "keywords":
             return get_keyword_tweets(client,query['keyword'], worker_id, sinceid, maxid,debug)
     except Exception,e:
         return "no-data",[]
 
 
-def get_search_tweets_recursive(client,worker_id,query_type,query,wait_time_in_seconds=5.5,num_tries=10,sinceid=None,maxid=None,debug=False):
+def get_search_tweets_recursive(client,worker_id,query_type,query,wait_time_in_seconds=5.5,num_tries=50,sinceid=None,maxid=None,debug=False):
     if debug:
         if sinceid and maxid:
             print "taskid--" + str(worker_id) + " Since-Max Query == " + sinceid + "--" + maxid

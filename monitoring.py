@@ -121,13 +121,13 @@ def generate_pdf(filename, clean=True):
         pass        
 
 def get_top_users(con,starttime,endtime,debug=False):
-    query = "select distinct(u.screenname) as sn,sum(dl.count) as sum from download_logs as dl, users as u \
+    query = "select distinct(u.id) as sn,sum(dl.count) as sum from download_logs as dl, users as u \
       where dl.query_id = u.id and dl.query_type = \"users\" and dl.download_time > \'" + starttime + "\' and dl.download_time < \'" + endtime + "\'\
       group by u.id order by sum desc limit 10"
     ans =  general_select_query(con, 0, query, count ="all",debug=debug)
-    s = "\\begin{tabular}{|c|c|}\
+    s = "\\begin{tabular}{|c|c|c|}\
          \\hline\
-         Screenname & Total Tweets \\\\ \n \\hline\n"
+         Rowid & Total Tweets \\\\ \n \\hline\n"
     for row in ans:
         s = s + str(row['sn']).replace("_","\\_") + " & " + str(row['sum']) + "\\\\ \n \\hline\n" 
     s = s + "\\end{tabular}"  
