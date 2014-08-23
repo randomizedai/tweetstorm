@@ -45,8 +45,9 @@ def twitter_accounts_string(con,debug=False):
 
 def total_users_string(con,debug=False):    
     try:
-        ans = select_from_table(con, 0, "users", "COUNT(distinct screenname) as count", {}, debug=debug)
-        total_users = ans['count']
+        ans1 = select_from_table(con, 0, "users", "COUNT(distinct screenname) as count", {}, debug=debug)
+        ans2 = select_from_table(con, 0, "users", "COUNT(distinct userid) as count", {}, debug=debug)
+        total_users = ans1['count'] + ans2['count']
         return "Total Users - - " + str(total_users)
     except Exception,e:
         return "???"

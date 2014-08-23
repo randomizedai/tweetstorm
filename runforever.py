@@ -23,15 +23,17 @@ def main_loop(debug=False):
     ans1 = select_from_table(con,0,"download_logs","MAX(worker_id) as max",{},debug=True)
     ans2 = select_from_table(con,0,"twitter_auths","MAX(active_status) as max",{},debug=True)
     count = max(ans1['max'],ans2['max']) + 1 
-    generate_report_nth_hour = 3
+    generate_report_nth_hour = 6
     clean_auths_hour = 0.083  #(5 minutes)
     last_cleaned_auths_time = time.time()
     last_report_generated_time = time.time()
     worker_id = 0
     first_time = True
+    first_report = True
     while 1:
         cur_time = time.time()
-        if ( cur_time - last_report_generated_time ) / (60 * 60) > generate_report_nth_hour:
+        if (first_report and ( cur_time - last_report_generated_time ) / (60 * 60) > generate_report_nth_hour > 0.25) or  ( cur_time - last_report_generated_time ) / (60 * 60) > generate_report_nth_hour:
+            first_report = False
             try:
                 generate_and_send_report(config,last_report_generated_time,cur_time)
                 print "generating report at" 
