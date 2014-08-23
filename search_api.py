@@ -141,5 +141,5 @@ if __name__ == '__main__':
     con = test_and_get_mysql_con(worker_id, con, config, debug)
     auth = get_auth(con, worker_id, debug)
     client = get_client(auth)
-    get_search_tweets_recursive(client, 1, "users",{"screenname":"NASA_NCCS"}, maxid=str(100314166925082624),debug=debug)
+    get_search_tweets_recursive(client, 1, "users",{"userid":11695472},debug=debug)
     release_auth(con, worker_id, auth['id'], debug)  

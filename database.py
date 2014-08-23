@@ -198,7 +198,7 @@ def release_query(con,worker_id,query_type,id,debug=False):
 
     
 def get_user(con,worker_id,debug=False):
-    ru_status,row_user = get_active_row(con,worker_id,"users",bool_dict={},debug=debug)
+    ru_status,row_user = get_active_row(con,worker_id,"users",bool_dict={"retries<":3},debug=debug)
     if ru_status == "success" and row_user:
         return row_user
     else:
@@ -206,7 +206,7 @@ def get_user(con,worker_id,debug=False):
     
        
 def get_keyword(con,worker_id,debug=False):
-    rk_status,row_kw = get_active_row(con,worker_id,"keywords",bool_dict={},debug=debug)
+    rk_status,row_kw = get_active_row(con,worker_id,"keywords",bool_dict={"retries<":3},debug=debug)
     if rk_status == "success" and row_kw:
         return row_kw
     else:

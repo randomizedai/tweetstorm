@@ -18,6 +18,7 @@ def last_accessed_first(con,worker_id,debug=False):
         if debug:
             print "taskid--" + str(worker_id) +" got keyword " + str(keyword)
     
+        
         if user and keyword:
             user_last_access_time = user['last_access']
             keyword_last_access_time = keyword['last_access']
