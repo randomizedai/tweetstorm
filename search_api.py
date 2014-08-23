@@ -39,7 +39,7 @@ def get_user_tweets(client, worker_id, sinceid=None,maxid=None,debug=False,useri
     else:
         try:
             if debug:
-                print "taskid--" + str(worker_id) + "  User Query -->  userid -- " + userid + " sinceid -- " + str(sinceid) + " maxid -- " + str(maxid)  
+                print "taskid--" + str(worker_id) + "  User Query -->  userid -- " + str(userid) + " sinceid -- " + str(sinceid) + " maxid -- " + str(maxid)  
             response = client.api.statuses.user_timeline.get(user_id=userid,since_id=sinceid,max_id=maxid,count=200)
             if debug:
                 print "taskid--" + str(worker_id) + " User Query -- Header --> " + str(response.headers)
@@ -68,12 +68,14 @@ def get_keyword_tweets(client,search_keyword,worker_id,sinceid=None,maxid=None,d
         return ("exception",e)
 
 def pick_search_query(client,query_type,query,worker_id,sinceid=None,maxid=None,debug=False):
+    print "here"
     try:
         if query_type == "users":
             return get_user_tweets(client,worker_id, sinceid, maxid,debug,screenname=query['screenname'],userid=query['userid'])
         elif query_type == "keywords":
             return get_keyword_tweets(client,query['keyword'], worker_id, sinceid, maxid,debug)
     except Exception,e:
+        print_exec_error(worker_id)
         return "no-data",[]
 
 
@@ -92,9 +94,10 @@ def get_search_tweets_recursive(client,worker_id,query_type,query,wait_time_in_s
             print "taskid--" + str(worker_id) + " init Query --> No max and since id"
     ans_tweets = []
     status = "exception"
-    for _ in range(num_tries):    
+    for _ in range(num_tries):
+            
         status, response = pick_search_query(client,query_type,query,worker_id,sinceid=sinceid,maxid=maxid,debug=debug)
-        
+        print "Amit", status
         if debug:
             print "taskid--" + str(worker_id) + " Waiting for " + str(wait_time_in_seconds) + " seconds for further tweets"
             print "taskid--" + str(worker_id) + " sinceid--" + str(sinceid) + "  maxid--" + str(maxid)
