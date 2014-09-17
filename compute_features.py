@@ -13,7 +13,7 @@ def compute_feature(feature_row,file_row,worker_id,dir_path,debug=False):
     filename_suffix = filename[len(feature_row['input_feature']):]
     output_filename = feature_row['output_feature'] + filename_suffix
     output_file_path = os.path.dirname(input_file_path) + "/" + output_filename
-    feature_command = feature_row + " < " + input_file_path + " > " + output_file_path
+    feature_command = feature_row['command'] + " < " + input_file_path + " > " + output_file_path
     if debug:
         print "taskid--" + str(worker_id) +  "Feature command --> " + feature_command
     
