@@ -25,10 +25,10 @@ def insert_machine(machine_name,con,worker_id, debug=False):
 
 
 def get_machine_id(machine_name,con,worker_id,debug=False):    
-    ans1 = select_from_table(con, worker_id, "machines", machine_name, {"machine_name":machine_name}, debug)
+    ans1 = select_from_table(con, worker_id, "machines","*", {"machine_name":machine_name}, debug)
     if not ans1:
         insert_machine(machine_name,con,worker_id,debug)
-        ans1 = select_from_table(con, worker_id, "machines", machine_name, {"machine_name":machine_name}, debug)
+        ans1 = select_from_table(con, worker_id, "machines", "*", {"machine_name":machine_name}, debug)
     
     id = ans1['id']
     return id
@@ -36,8 +36,9 @@ def get_machine_id(machine_name,con,worker_id,debug=False):
         
 def insert_features_machines(con,worker_id,machine_name,debug=False):        
     query = "select id from features where id NOT IN (select distinct fm.feature_id as feature_id from\
-     features_machines as fm, machines as m where m.id = fm.machine_id and m.name = " + machine_name + ";"
-    ans2 = general_select_query(con, worker_id, query, count="all", debug)
+     features_machines as fm, machines as m where m.id = fm.machine_id and m.machine_name = \'" + machine_name + "\');"
+    print query	
+    ans2 = general_select_query(con, worker_id, query, count="all", debug=True)
     mid = get_machine_id(machine_name, con, worker_id, debug)
     for x in ans2:
         insert_into_table(con, worker_id, "features_machines", {"machine_id":mid,"feature_id":x['id']}, debug)
@@ -232,7 +233,7 @@ def release_feature_machine_pair(con,worker_id,fm_id,debug=False):
 
 
 def get_feature_machine_pair(con,worker_id,machine_id,debug=False):
-    fm_status,fm_value = get_active_row(con,worker_id,"features_machines",bool_dict={"machine_id":machine_id},debug)
+    fm_status,fm_value = get_active_row(con,worker_id,"features_machines",bool_dict={"machine_id":machine_id},debug=debug)
     if fm_status=="success" and fm_value:
         return fm_value
     else:
@@ -241,33 +242,33 @@ def get_feature_machine_pair(con,worker_id,machine_id,debug=False):
 
 def get_old_files(con,worker_id,machine_name,filename_prefix,debug=False):
     res = general_select_query(con, worker_id, "select id from files where machine_name = \'" + \
-                               machine_name + "\' and filename LIKE \'" + filename_prefix + "\%\'",count="all", debug)
+                               machine_name + "\' and filename LIKE \'" + filename_prefix + "%\'",count="all", debug=debug)
     return res
 
 ## TODO ----  There is a big JOIN here...try and see if you can avoid this    
 def get_files_for_fm_pair(con,worker_id,fm_value,limit=10,debug=False):
-    machine = select_from_table(con, worker_id, "machines", "*", {"id":fm_value['machine_id']},count="one",debug)
-    feature = select_from_table(con, worker_id, "features", "*", {"id":fm_value['feature_id']},count="one",debug)
+    machine = select_from_table(con, worker_id, "machines", "*", {"id":fm_value['machine_id']},count="one",debug=debug)
+    feature = select_from_table(con, worker_id, "features", "*", {"id":fm_value['feature_id']},count="one",debug=debug)
     machine_name = machine["machine_name"]
     feature_fn_prefix = feature['input_feature']
     list_files = general_select_query(con,worker_id,"select * from files where machine_name = \'" + \
                 machine_name + "\' and filename LIKE \'" + feature_fn_prefix + \
-                "\%\' and file_id NOT IN (select file_id from feature_logs where features_machines_id =" +str(fm_value['id'])  +") limit " + str(limit) ,\
-                count="all", debug)
+                "%\' and id NOT IN (select file_id from feature_logs where features_machines_id =" +str(fm_value['id'])  +") limit " + str(limit) ,\
+                count="all", debug=debug)
     return list_files
     
     
-def insert_files_into_feature_logs(con,worker_id,file_id,list_files,fm_id,debug=False):    
+def insert_files_into_feature_logs(con,worker_id,list_files,fm_id,debug=False):    
     list_ids = []
     for x in list_files:
         nid = insert_into_table(con, worker_id, "feature_logs", {"file_id":x['id'],"worker_id":str(worker_id),\
-         "features_machines_id":fm_id,"start_time" : str(datetime.now()),status:"active"}, debug)
+         "features_machines_id":fm_id,"start_time" : str(datetime.now()),"status":"active"}, debug=debug)
         list_ids.append(nid)
     return list_ids    
     
 
 def update_feature_logs(con,worker_id,id,status,description,debug=False):
-    update_table(con, worker_id, "feature_logs", {"status":status,"exception_description":description,"end_time":str(datetime.now())}, bool_dict, debug)
+    update_table(con, worker_id, "feature_logs", {"status":status,"exception_description":description,"end_time":str(datetime.now())}, {"id" : id },debug)
     
 def get_user(con,worker_id,debug=False):
     ru_status,row_user = get_active_row(con,worker_id,"users",bool_dict={"retries<":3},debug=debug)
@@ -325,8 +326,9 @@ def clean_stuck_auths(con,worker_id,debug=False):
 if __name__ == '__main__':
     con = None
     debug = True
-    fn = sys.argv[1]
-    worker_id = 0
+    #fn = sys.argv[1]
+    worker_id =10
     config = read_config_file(get_absolute_path("config.ini"))
     con = test_and_get_mysql_con(worker_id, con, config, debug)
-    insert_file(fn, con, debug)
+    machine_name = "twitter-download-1.417284266638.google.internal"    
+    #insert_file(fn, con, debug)
