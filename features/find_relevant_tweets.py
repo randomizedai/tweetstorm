@@ -5,7 +5,7 @@ Created on Sep 17, 2014
 '''
 
 from utils.ahocorasick import *
-import sys,json
+import os,sys,json
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 data = []
 with open(BASE_DIR + "/../data/relevant_concepts.csv") as fp:
