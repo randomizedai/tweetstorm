@@ -162,12 +162,15 @@ def compute_feature_main(worker_id,debug=False):
             print "taskid--" + str(worker_id) + "list of log_ids -->" + str(list_log_ids)
    
         for i,file in enumerate(list_files):
-            status,(outputpath,outputfn) = compute_feature(feature, file, worker_id, debug)
-            update_feature_logs(con, worker_id, list_log_ids[i], status, message, debug)
-            if status == "success":
-                insert_into_table(con, worker_id, "files", {"machine_name":hostname,"path":outputpath,"filename":outputfn\
-                ,"date_string":get_current_date(),"hour_string":get_current_hour(),"last_access":str(datetime.now())}, debug)
-  
+            try:
+                status,message = compute_feature(feature, file, worker_id, debug)
+                update_feature_logs(con, worker_id, list_log_ids[i], status, str(message), debug)
+                if status == "success":
+                    insert_into_table(con, worker_id, "files", {"machine_name":hostname,"path":message[0],"filename":message[1]\
+                    ,"date_string":get_current_date(),"hour_string":get_current_hour(),"last_access":str(datetime.now())}, debug)
+            except Exception,e:
+                update_feature_logs(con, worker_id, list_log_ids[i], "exception", str(e), debug)
+               
         
         release_feature_machine_pair(con, worker_id, fm['id'], debug)
 
