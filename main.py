@@ -164,12 +164,12 @@ def compute_feature_main(worker_id,debug=False):
         for i,file in enumerate(list_files):
             try:
                 status,message = compute_feature(feature, file, worker_id, debug)
-                update_feature_logs(con, worker_id, list_log_ids[i], status, str(message), debug)
+                update_feature_logs(con, worker_id, list_log_ids[i], status, con.escape_string(str(message)), debug)
                 if status == "success":
                     insert_into_table(con, worker_id, "files", {"machine_name":hostname,"path":message[0],"filename":message[1]\
                     ,"date_string":get_current_date(),"hour_string":get_current_hour(),"last_access":str(datetime.now())}, debug)
             except Exception,e:
-                update_feature_logs(con, worker_id, list_log_ids[i], "exception", str(e), debug)
+                update_feature_logs(con, worker_id, list_log_ids[i], "exception", con.escape_string(str(e)), debug)
                
         
         release_feature_machine_pair(con, worker_id, fm['id'], debug)
