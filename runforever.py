@@ -22,8 +22,12 @@ def main_loop(debug=False):
     con = test_and_get_mysql_con(0, con, config, debug)
     ans1 = select_from_table(con,0,"download_logs","MAX(worker_id) as max",{},debug=True)
     ans2 = select_from_table(con,0,"twitter_auths","MAX(active_status) as max",{},debug=True)
+    feature_ans1 = select_from_table(con,0,"feature_logs","MAX(worker_id) as max",{},debug=True)
+    feature_ans2 = select_from_table(con,0,"features_machines","MAX(active_status) as max",{},debug=True)
+    
     count = max(ans1['max'],ans2['max']) + 1 
-    generate_report_nth_hour = 6
+    feature_count = max(feature_ans1['max'],feature_ans2['max']) + 1
+    generate_report_nth_hour = 24
     clean_auths_hour = 0.083  #(5 minutes)
     last_cleaned_auths_time = time.time()
     last_report_generated_time = time.time()
@@ -57,6 +61,8 @@ def main_loop(debug=False):
             lent = 50
         for i in range(0,lent):
             worker_main.delay(count,debug=True)
+            compute_feature_main(feature_count, debug=True)
+            feature_count = feature_count + 1
             count = count + 1
             time.sleep(0.5)
         time.sleep(60)
