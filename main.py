@@ -146,6 +146,7 @@ def compute_feature_main(worker_id,debug=False):
     
     try:
         con = test_and_get_mysql_con(worker_id, con, config, debug)
+        insert_features_machines(con, worker_id, machine_name, debug)
         machine_id = get_machine_id(hostname, con, worker_id, debug)
         fm = get_feature_machine_pair(con, worker_id, machine_id, debug)
         feature =  select_from_table(con, worker_id, "features", "*", {"id":fm['feature_id']},count="one",debug=debug)
