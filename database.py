@@ -249,10 +249,12 @@ def get_old_files(con,worker_id,machine_name,filename_prefix,debug=False):
 def get_files_for_fm_pair(con,worker_id,fm_value,limit=10,debug=False):
     machine = select_from_table(con, worker_id, "machines", "*", {"id":fm_value['machine_id']},count="one",debug=debug)
     feature = select_from_table(con, worker_id, "features", "*", {"id":fm_value['feature_id']},count="one",debug=debug)
+    cur_hour = get_current_hour()
+    cur_date = get_current_date()
     machine_name = machine["machine_name"]
     feature_fn_prefix = feature['input_feature']
     list_files = general_select_query(con,worker_id,"select * from files where machine_name = \'" + \
-                machine_name + "\' and filename LIKE \'" + feature_fn_prefix + \
+                machine_name + "\' AND ( date_string < "  + cur_date + " OR hour_string < " + cur_hour + " ) AND  filename LIKE \'" + feature_fn_prefix + \
                 "%\' and id NOT IN (select file_id from feature_logs where features_machines_id =" +str(fm_value['id'])  +") order by last_access asc limit " + str(limit)  ,\
                 count="all", debug=debug)
     return list_files
