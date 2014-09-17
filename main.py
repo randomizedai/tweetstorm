@@ -16,6 +16,7 @@ from filesystem import *
 from util import *
 from celery import Celery
 import traceback
+from compute_features import *
 
 config = read_config_file(get_absolute_path("config.ini"))
 queue_name = config.get("celery","queue_name")
@@ -138,6 +139,45 @@ def worker_main(worker_id,debug=False):
         except Exception, e:
             pass
                 
+ 
+@celery.task        
+def compute_feature_main(worker_id,debug=False):
+    con = None
+    
+    try:
+        con = test_and_get_mysql_con(worker_id, con, config, debug)
+        machine_id = get_machine_id(hostname, con, worker_id, debug)
+        fm = get_feature_machine_pair(con, worker_id, machine_id, debug)
+        feature =  select_from_table(con, worker_id, "features", "*", {"id":fm['feature_id']},count="one",debug=debug)
+        
+        if debug:
+            print "taskid--" + str(worker_id) + "fm pair -->" + str(fm)
+        list_files = get_files_for_fm_pair(con, worker_id, fm, debug=debug)
+        if debug:
+            print "taskid--" + str(worker_id) + "list of files -->" + str(list_files)
+   
+        list_log_ids = insert_files_into_feature_logs(con, worker_id, list_files, fm['id'], debug)    
+        if debug:
+            print "taskid--" + str(worker_id) + "list of log_ids -->" + str(list_log_ids)
+   
+        for i,file in enumerate(list_files):
+            status,message = compute_feature(feature, file, worker_id, debug)
+            update_feature_logs(con, worker_id, list_log_ids[i], status, message, debug)
+        
+        release_feature_machine_pair(con, worker_id, fm['id'], debug)
+
+    except Exception, e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print("********#####EXCEPTION#####********* taskid--"+ str(worker_id),exc_type, fname, exc_tb.tb_lineno)
+        traceback.print_exc()
+        print "taskid--" + str(worker_id) + " In Exception --",e
+        try:
+            if fm:
+                release_feature_machine_pair(con, worker_id, fm['id'], debug)
+        except Exception, e:
+            pass
+ 
  
 if __name__ == '__main__':
     worker_main(1,debug=True)

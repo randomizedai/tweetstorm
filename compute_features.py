@@ -7,7 +7,7 @@ import os
 from util import *
 import subprocess
 
-def compute_feature(feature_row,file_row,worker_id,dir_path,debug=False):
+def compute_feature(feature_row,file_row,worker_id,debug=False):
     input_file_path = file_row['path']
     filename = get_filename_from_path(input_file_path)
     filename_suffix = filename[len(feature_row['input_feature']):]

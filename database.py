@@ -253,7 +253,7 @@ def get_files_for_fm_pair(con,worker_id,fm_value,limit=10,debug=False):
     feature_fn_prefix = feature['input_feature']
     list_files = general_select_query(con,worker_id,"select * from files where machine_name = \'" + \
                 machine_name + "\' and filename LIKE \'" + feature_fn_prefix + \
-                "%\' and id NOT IN (select file_id from feature_logs where features_machines_id =" +str(fm_value['id'])  +") limit " + str(limit) ,\
+                "%\' and id NOT IN (select file_id from feature_logs where features_machines_id =" +str(fm_value['id'])  +") order by last_access asc limit " + str(limit)  ,\
                 count="all", debug=debug)
     return list_files
     
