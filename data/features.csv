@@ -1,0 +1,3 @@
+features
+language,command,input_feature
+shell,/bin/sh features/json_url_extract.sh,tweets_

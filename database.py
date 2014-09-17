@@ -17,6 +17,14 @@ table_name
 fields (comma separated)
 values (one line for each entry, comma separated)
 '''
+
+
+def insert_machine(machine_name,con,worker_id, debug=False):
+    insert_into_table(con, worker_id, "machines", {"machine_name":machine_name}, debug)
+
+
+def insert_feature_machine_pairs(con,worker_id,machine_name=None,feature_name=None,debug=False):
+
 def insert_file(filename,con,debug=False):
     data = []
     with open(filename,"r") as fp:

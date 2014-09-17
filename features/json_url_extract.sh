@@ -1,0 +1,1 @@
+jq -c '{id_str,urls:  (.entities.urls | map(.url)) [] }'
