@@ -21,9 +21,30 @@ values (one line for each entry, comma separated)
 
 def insert_machine(machine_name,con,worker_id, debug=False):
     insert_into_table(con, worker_id, "machines", {"machine_name":machine_name}, debug)
+    
 
 
-def insert_feature_machine_pairs(con,worker_id,machine_name=None,feature_name=None,debug=False):
+def get_machine_id(machine_name,con,worker_id,debug=False):    
+    ans1 = select_from_table(con, worker_id, "machines", machine_name, {"machine_name":machine_name}, debug)
+    if not ans1:
+        insert_machine(machine_name,con,worker_id,debug)
+        ans1 = select_from_table(con, worker_id, "machines", machine_name, {"machine_name":machine_name}, debug)
+    
+    id = ans1['id']
+    return id
+    
+        
+def insert_features_machines(con,worker_id,machine_name,debug=False):        
+    query = "select id from features where id NOT IN (select distinct fm.feature_id as feature_id from\
+     features_machines as fm, machines as m where m.id = fm.machine_id and m.name = " + machine_name + ";"
+    ans2 = general_select_query(con, worker_id, query, count="all", debug)
+    mid = get_machine_id(machine_name, con, worker_id, debug)
+    for x in ans2:
+        insert_into_table(con, worker_id, "features_machines", {"machine_id":mid,"feature_id":x['id']}, debug)
+        
+         
+
+
 
 def insert_file(filename,con,debug=False):
     data = []
@@ -140,8 +161,9 @@ def insert_into_table(con,worker_id,table_name,value_dict,debug=False):
     if debug:
         print "taskid--" + str(worker_id) + " " + query
     cur.execute(query)
+    lastid = cur.lastrowid
     cur.close()
-
+    return lastid
         
 def get_active_row(con,worker_id,table_name,bool_dict={},debug=False):
     try:
@@ -204,6 +226,48 @@ def release_query(con,worker_id,query_type,id,debug=False):
     elif query_type == "keywords":
         release_keyword(con,worker_id,id,debug)    
 
+def release_feature_machine_pair(con,worker_id,fm_id,debug=False):
+    update_table(con, worker_id, "features_machines", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id,"active_status" : worker_id}, debug)   
+
+
+
+def get_feature_machine_pair(con,worker_id,machine_id,debug=False):
+    fm_status,fm_value = get_active_row(con,worker_id,"features_machines",bool_dict={"machine_id":machine_id},debug)
+    if fm_status=="success" and fm_value:
+        return fm_value
+    else:
+        print "taskid--" + str(worker_id) + "  In getting Feature_machine_pair --> " + fm_status
+    
+
+def get_old_files(con,worker_id,machine_name,filename_prefix,debug=False):
+    res = general_select_query(con, worker_id, "select id from files where machine_name = \'" + \
+                               machine_name + "\' and filename LIKE \'" + filename_prefix + "\%\'",count="all", debug)
+    return res
+
+## TODO ----  There is a big JOIN here...try and see if you can avoid this    
+def get_files_for_fm_pair(con,worker_id,fm_value,limit=10,debug=False):
+    machine = select_from_table(con, worker_id, "machines", "*", {"id":fm_value['machine_id']},count="one",debug)
+    feature = select_from_table(con, worker_id, "features", "*", {"id":fm_value['feature_id']},count="one",debug)
+    machine_name = machine["machine_name"]
+    feature_fn_prefix = feature['input_feature']
+    list_files = general_select_query(con,worker_id,"select * from files where machine_name = \'" + \
+                machine_name + "\' and filename LIKE \'" + feature_fn_prefix + \
+                "\%\' and file_id NOT IN (select file_id from feature_logs where features_machines_id =" +str(fm_value['id'])  +") limit " + str(limit) ,\
+                count="all", debug)
+    return list_files
+    
+    
+def insert_files_into_feature_logs(con,worker_id,file_id,list_files,fm_id,debug=False):    
+    list_ids = []
+    for x in list_files:
+        nid = insert_into_table(con, worker_id, "feature_logs", {"file_id":x['id'],"worker_id":str(worker_id),\
+         "features_machines_id":fm_id,"start_time" : str(datetime.now()),status:"active"}, debug)
+        list_ids.append(nid)
+    return list_ids    
+    
+
+def update_feature_logs(con,worker_id,id,status,description,debug=False):
+    update_table(con, worker_id, "feature_logs", {"status":status,"exception_description":description,"end_time":str(datetime.now())}, bool_dict, debug)
     
 def get_user(con,worker_id,debug=False):
     ru_status,row_user = get_active_row(con,worker_id,"users",bool_dict={"retries<":3},debug=debug)

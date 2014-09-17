@@ -155,6 +155,8 @@ def config_section_map(config, section):
             dict1[option] = None
     return dict1
 
+def get_filename_from_path(path):
+    return ntpath.basename(path)
 
 def get_filename_from_path(path):
     return ntpath.basename(path)
