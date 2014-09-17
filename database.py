@@ -170,7 +170,7 @@ def get_active_row(con,worker_id,table_name,bool_dict={},debug=False):
     try:
         bool_dict["active_status"] = 0
         ### get row candidate
-        row_candidate = select_from_table(con, worker_id, table_name,"*", bool_dict, "last_access", 1, debug=debug)
+        row_candidate = select_from_table(con, worker_id, table_name,"*", bool_dict, "last_access asc", 1, debug=debug)
         if not row_candidate:
             return ("no-active-candidate",None)
         if debug:
@@ -228,7 +228,7 @@ def release_query(con,worker_id,query_type,id,debug=False):
         release_keyword(con,worker_id,id,debug)    
 
 def release_feature_machine_pair(con,worker_id,fm_id,debug=False):
-    update_table(con, worker_id, "features_machines", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id,"active_status" : worker_id}, debug)   
+    update_table(con, worker_id, "features_machines", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : fm_id,"active_status" : worker_id}, debug)   
 
 
 
