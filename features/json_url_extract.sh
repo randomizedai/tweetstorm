@@ -1,1 +1,1 @@
-jq -c '{id_str,urls:  (.entities.urls | map(.url)) [] }'
+jq -c '{id_str,url:  (.entities.urls | map(.url)) [] }' | jq -c '[.id_str,.url]' | replace "\"" "" "[" "" "]" ""
