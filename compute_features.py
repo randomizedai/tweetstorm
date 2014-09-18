@@ -21,7 +21,7 @@ def compute_feature(feature_row,file_row,worker_id,debug=False):
     
     try:
         p1  = subprocess.check_call(feature_command,shell=True)
-        p2 = subprocess.check_call("mv " + temp_output_file_path + " " + output_file_path )
+        p2 = subprocess.check_call("mv " + temp_output_file_path + " " + output_file_path,shell=True )
         return ("success",(output_file_path,output_filename))
     except Exception, e:
         return ("exception",e)
