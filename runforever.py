@@ -61,7 +61,7 @@ def main_loop(debug=False):
             lent = 50
         for i in range(0,lent):
             worker_main.delay(count,debug=True)
-            compute_feature_main(feature_count, debug=True)
+            compute_feature_main.delay(feature_count, debug=True)
             feature_count = feature_count + 1
             count = count + 1
             time.sleep(0.5)
