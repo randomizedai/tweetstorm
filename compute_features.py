@@ -13,12 +13,15 @@ def compute_feature(feature_row,file_row,worker_id,debug=False):
     filename_suffix = filename[len(feature_row['input_feature']):]
     output_filename = feature_row['output_feature'] + filename_suffix
     output_file_path = os.path.dirname(input_file_path) + "/" + output_filename
-    feature_command = feature_row['command'] + " < " + input_file_path + " > " + output_file_path
+    tempval = get_random_uuid()
+    temp_output_file_path = os.path.dirname(input_file_path) + "/_tmp_" + tempval
+    feature_command = feature_row['command'] + " < " + input_file_path + " > " + temp_output_file_path
     if debug:
         print "taskid--" + str(worker_id) +  "Feature command --> " + feature_command
     
     try:
-        p  = subprocess.Popen(feature_command,shell=True).wait()
+        p1  = subprocess.check_call(feature_command,shell=True)
+        p2 = subprocess.check_call("mv " + temp_output_file_path + " " + output_file_path )
         return ("success",(output_file_path,output_filename))
     except Exception, e:
         return ("exception",e)
