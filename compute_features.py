@@ -20,7 +20,7 @@ def compute_feature(feature_row,file_row,worker_id,debug=False):
     try:
         p  = subprocess.Popen(feature_command,shell=True).wait()
         return ("success",(output_file_path,output_filename))
-    except Except, e:
+    except Exception, e:
         return ("exception",e)
         
             
