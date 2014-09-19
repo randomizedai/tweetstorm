@@ -18,6 +18,7 @@ def compute_feature(feature_row,file_row,worker_id,debug=False):
     feature_command = feature_row['command'] + " < " + input_file_path + " > " + temp_output_file_path
     if debug:
         print "taskid--" + str(worker_id) +  "Feature command --> " + feature_command
+        print "taskid--" + "mv " + temp_output_file_path + " " + output_file_path
     
     try:
         p1  = subprocess.check_call(feature_command,shell=True)

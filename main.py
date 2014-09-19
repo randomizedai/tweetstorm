@@ -102,7 +102,7 @@ def worker_main(worker_id,debug=False):
             print "taskid--" + str(worker_id) + " Status --> " + status + " Downloaded Tweets --> " + str(len(response))
         
         
-        file_status,file_row = get_file(con, worker_id, download_dir, hostname, get_current_date(), get_current_hour(), chunk_size, debug)
+        file_status,file_row = get_file(con, worker_id, download_dir + "/" + query_type, hostname, get_current_date(), get_current_hour(), chunk_size, debug)
         if debug:
             print "taskid--" + str(worker_id) + " File Status --> " + file_status
             print "taskid--" + str(worker_id) + " File Name --> " + file_row['path']
