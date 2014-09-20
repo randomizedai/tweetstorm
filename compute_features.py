@@ -13,6 +13,7 @@ def compute_feature(feature_row,file_row,worker_id,debug=False):
     filename_suffix = filename[len(feature_row['input_feature']):]
     output_filename = feature_row['output_feature'] + filename_suffix
     output_file_path = ""
+    temp_output_file_path = ""
     feature_command = feature_row['command'].replace("$input",input_file_path)
     if feature_row['output_feature']:
         output_file_path = os.path.dirname(input_file_path) + "/" + output_filename
