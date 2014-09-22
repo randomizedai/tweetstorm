@@ -36,7 +36,7 @@ def main_loop(debug=False):
     first_report = True
     while 1:
         cur_time = time.time()
-        if (first_report and ( cur_time - last_report_generated_time ) / (60 * 60) > generate_report_nth_hour > 0.15) or  ( cur_time - last_report_generated_time ) / (60 * 60) > generate_report_nth_hour:
+        if (first_report and ( cur_time - last_report_generated_time ) / (60 * 60) > 0.15) or  ( cur_time - last_report_generated_time ) / (60 * 60) > generate_report_nth_hour:
             first_report = False
             try:
                 generate_and_send_report(config,last_report_generated_time,cur_time)
@@ -58,15 +58,16 @@ def main_loop(debug=False):
         lent = ans['count']
         if first_time:
             first_time = False
-            lent = 50
+            lent = 20
         for i in range(0,lent):
             worker_main.delay(count,debug=True)
             compute_feature_main.delay(feature_count, debug=True)
             feature_count = feature_count + 1
             count = count + 1
             time.sleep(0.5)
-        time.sleep(60)
+        print "started"    
         sys.stdout.flush()
+        time.sleep(60)
 
 if __name__ == '__main__':
     try:
