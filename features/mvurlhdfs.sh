@@ -13,7 +13,7 @@ if [ $TestDir -eq 0 ]; then
 	echo "Directory exist"
 else
 	hadoop fs -mkdir $URL_DIR
-        echo “Creating  directory”
+        echo "Creating  directory"
 fi
 
 #put files in the directory
