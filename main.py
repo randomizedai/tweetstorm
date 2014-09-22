@@ -166,7 +166,7 @@ def compute_feature_main(worker_id,debug=False):
                 status,message = compute_feature(feature, file, worker_id, debug)
                 if status == "success":
                     insert_into_table(con, worker_id, "files", {"machine_name":hostname,"path":message[0],"filename":message[1]\
-                    ,"date_string":file['date_string'],"hour_string":file['hour_string'],"last_access":str(get_current_timestamp())}, debug)
+                    ,"date_string":file['date_string'],"hour_string":file['hour_string'],"last_access":str(datetime.now()), debug)
                     update_feature_logs(con, worker_id, list_log_ids[i], status, "", debug)
                 else:
                     update_feature_logs(con, worker_id, list_log_ids[i], status, con.escape_string(str(message)), debug)    
