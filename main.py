@@ -17,6 +17,7 @@ from util import *
 from celery import Celery
 import traceback
 from compute_features import *
+from datetime import datetime
 
 config = read_config_file(get_absolute_path("config.ini"))
 queue_name = config.get("celery","queue_name")
