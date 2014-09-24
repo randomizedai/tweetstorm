@@ -209,11 +209,18 @@ def reset_table(con,worker_id,table_name,debug=False):
     cur.close() 
     
     
-def release_user(con,worker_id,id,debug=False):
-    update_table(con, worker_id, "users", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id,"active_status" : worker_id}, debug)   
-       
-def release_keyword(con,worker_id,id,debug=False):
-    update_table(con, worker_id, "keywords", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id,"active_status" : worker_id}, debug)   
+def release_user(con,worker_id,id,debug=False,last_access=True):
+    if last_access:
+        update_table(con, worker_id, "users", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id,"active_status" : worker_id}, debug)   
+    else:
+        update_table(con, worker_id, "users", {"active_status" : 0}, {"id" : id,"active_status" : worker_id}, debug)
+        
+           
+def release_keyword(con,worker_id,id,debug=False,last_access=True):
+    if last_access:
+        update_table(con, worker_id, "keywords", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id,"active_status" : worker_id}, debug)   
+    else:
+        update_table(con, worker_id, "keywords", {"active_status" : 0}, {"id" : id,"active_status" : worker_id}, debug)   
 
 def release_auth(con,worker_id,id,debug=False):
     update_table(con, worker_id, "twitter_auths", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : id,"active_status" : worker_id}, debug)   
