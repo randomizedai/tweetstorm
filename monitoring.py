@@ -60,16 +60,19 @@ def total_keywords_string(con,debug=False):
     except Exception,e:
         return "???"
 
-def total_machines_string(con,starttime,endtime,debug=False):
+
+def get_active_machines(con,starttime,endtime,debug=False):
     try:
         query = "select distinct(f.machine_name) from download_logs as dl  JOIN files as f  on dl.file_id = f.id\
                  where download_time > \'" + starttime + "\' and download_time < \'" + endtime + "\'";
         ans = general_select_query(con, 0, query, count = "all",debug=debug)
-        ans_string = "Active Machines - - " + str(len(ans)) + " [" + ",".join([x['machine_name'] for x in ans]) + "]"
-        return ans_string
+        return [x['machine_name'] for x in ans]
+        #ans_string = "Active Machines - - " + str(len(ans)) + " [" + ",".join([x['machine_name'] for x in ans]) + "]"
+        return ans
     except Exception,e:
-        return "???"
+        return []
 
+    
 
 def total_tweets_downloaded(con,starttime,endtime,debug=False):
     try:
@@ -149,19 +152,52 @@ def get_top_keywords(con,starttime,endtime,debug=False):
 
 
 
-def get_count_files(con,feature,startime,endtime,debug= True):
-    
+def get_count_files(con,filename_prefix,starttime,endtime,active_machines, debug = True):
+    am_string = "(\'" + "\',\'".join(active_machines) + "\')" 
+    if endtime == 0:
+        ans = general_select_query(con, 0, "select count(*) as count from files where filename LIKE \'"\
+        + filename_prefix + "%\' and machine_name in " + am_string, debug)
+        return ans['count']
+    else:
+        ans = general_select_query(con, 0, "select count(*) as count from files where filename LIKE \'"\
+        + filename_prefix + "%\' and machine_name in " + am_string + " and last_access >= \'" + \
+        str(starttime) + "\' and last_access <= \'" + str(endtime) + "\'" , debug)
+        return ans['count']   
+    return 0  
 
-def get_feature_string(con,feature,startime,endtime,debug=True):
+def get_feature_string(con,feature,starttime,endtime,active_machines,debug=True):
     person_id = feature["person_id"]
-    ans = "\\textbf{" + feature["name"]  + "} \\newline Person responsible :- "
+    ans = "\\textbf{" + feature["name"]  + "} {\\newline}Person responsible :- "
     if person_id:
         person_row = general_select_query(con, 0, "select * from persons where id =" + str(person_id), count="one", debug=debug)
         ans = ans + person_row["name"]
-        
-    ans += "\\newline"
-    ans += 
-
+    
+    total_input_files = 0
+    cur_input_files = 0
+    total_output_files = 0
+    cur_output_files = 0    
+    ans += "{\\newline}"
+    if feature['input_feature']:
+        total_input_files = get_count_files(con,feature['input_feature'],0,time.time(),active_machines,debug) 
+        cur_input_files = get_count_files(con,feature['input_feature'],starttime,endtime,active_machines,debug) 
+    
+    if feature['output_feature']:
+        total_output_files = get_count_files(con,feature['output_feature'],0,time.time(),active_machines,debug) 
+        cur_output_files = get_count_files(con,feature['output_feature'],starttime ,endtime,active_machines,debug) 
+    
+    
+    ans += "Total Number of Available Input Files :- " + str(total_input_files) + "{\\newline}"
+    ans += "Total Number of Produced Output Files :- " + str(total_output_files) + "{\\newline}"
+    ans += "{\\newline}{\\newline}"
+    ans += "In this session :-{\\newline}"
+    ans += "Total Number of Input Files :- " + str(cur_input_files) + "{\\newline}"
+    ans += "Total Number of Output Files :- " + str(cur_output_files) + "{\\newline}"
+    statuses_query = "select count(*) as count,fl.status as status from feature_logs fl join features_machines fm where"\
+    +" fl.features_machines_id = fm.id and fm.feature_id = " + str(feature['id']) + \
+    " and start_time  >= \'" + str(starttime) + "\' and start_time <= \'" + str(endtime) + " group by fl.status";
+    statuses = general_select_query(con, 0, statuses_query, count="all", debug)
+    for x in statuses:
+        ans += "Status :: "  + x['status'] + "  Count :: " + x['count'] + "{\\newline}"
 
 
     return ans    
@@ -185,7 +221,8 @@ def generate_report(config,last_report_generated_time,cur_time,debug=False):
     endtime_file = get_timestamp_from_time(cur_time,'%Y%m%d_%H%M%S')
     starttime_file = get_timestamp_from_time(last_report_generated_time,'%Y%m%d_%H%M%S')
     con = get_mysql_con(0, config, debug)
-    
+    active_machines = get_active_machines(con,starttime,endtime,debug) 
+    #ans_string = 
     string = "\\title{\\textbf{Tweets Download Report}}\n \
               \\date{}\n  \
               \\maketitle\n \
@@ -196,7 +233,7 @@ def generate_report(config,last_report_generated_time,cur_time,debug=False):
                \\item " + twitter_accounts_string(con,debug) + "\
                \\item " + total_users_string(con,debug) + "\
                \\item " + total_keywords_string(con,debug) + "\
-               \\item " + total_machines_string(con,starttime,endtime,debug) + "\
+               \\item " + "Active Machines - - " + str(len(active_machines)) + " [" + ",".join(active_machines) + "]" + "\
                \\item " + total_tweets_in_db(con,debug) + "\
                \\end{itemize}\
                \\subsection*{Download Stats} \
@@ -207,7 +244,7 @@ def generate_report(config,last_report_generated_time,cur_time,debug=False):
               \\end{itemize}\
               \\subsection*{Top Users}" + get_top_users(con, starttime, endtime, debug)\
               +  "\\subsection*{Top Keywords}" + get_top_keywords(con, starttime, endtime, debug)\
-              +  "\\subsection*{Features}" + get_features(con, starttime, endtime, debug)
+              +  "\\subsection*{Features}" + get_features(con, starttime, endtime,active_machines, debug)
               
               
               
