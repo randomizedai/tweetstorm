@@ -147,6 +147,30 @@ def get_top_keywords(con,starttime,endtime,debug=False):
     s = s + "\\end{tabular}"  
     return s 
 
+
+
+def get_feature_string(con,feature,startime,endtime,debug=True):
+    person_id = feature["person_id"]
+    ans = "Feature :- " + feature["name"]  + "\n Person :- "
+    if person_id:
+        person_row = general_select_query(con, 0, "select * from persons where id =" + str(person_id), count="one", debug=debug)
+        ans = ans + person_row["name"]
+        ans += "\n"
+        
+
+def get_features(con,startime,endtime,debug=False):
+    features = general_select_query(con,0,"select * from features", count = "all",debug=debug)
+    
+    str_features = ""
+    for row in features:
+        str_current = get_feature_string(con,feature,startime,endtime,debug=True)
+        str_features += str_current
+    ans = "\\begin{itemize} " + str_features + " \\end{itemize} " 
+    
+
+
+    
+
 def generate_report(config,last_report_generated_time,cur_time,debug=False):
     endtime = get_timestamp_from_time(cur_time,'%Y-%m-%d %H:%M:%S')
     starttime = get_timestamp_from_time(last_report_generated_time,'%Y-%m-%d %H:%M:%S')
@@ -174,7 +198,9 @@ def generate_report(config,last_report_generated_time,cur_time,debug=False):
                \\item " + query_tweets_downloaded(con, starttime, endtime, "Keywords", debug) + "\
               \\end{itemize}\
               \\subsection*{Top Users}" + get_top_users(con, starttime, endtime, debug)\
-              +  "\\subsection*{Top Keywords}" + get_top_keywords(con, starttime, endtime, debug)
+              +  "\\subsection*{Top Keywords}" + get_top_keywords(con, starttime, endtime, debug)\
+              +  "\\subsection*{Features}" + get_features(con, starttime, endtime, debug)
+              
               
               
               
@@ -241,4 +267,4 @@ def generate_and_send_report(config,last_report_generated_time,cur_time,debug=Fa
 
 if __name__ == '__main__':
     config = read_config_file(get_absolute_path("config.ini"))
-    generate_report(config, 0, time.time(),True)
+    generate_and_send_report(config, 0, time.time(),True)
