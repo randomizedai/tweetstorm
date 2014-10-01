@@ -149,24 +149,32 @@ def get_top_keywords(con,starttime,endtime,debug=False):
 
 
 
+def get_count_files(con,feature,startime,endtime,debug= True):
+    
+
 def get_feature_string(con,feature,startime,endtime,debug=True):
     person_id = feature["person_id"]
-    ans = "Feature :- " + feature["name"]  + "\n Person :- "
+    ans = "\\textbf{" + feature["name"]  + "} \\newline Person responsible :- "
     if person_id:
         person_row = general_select_query(con, 0, "select * from persons where id =" + str(person_id), count="one", debug=debug)
         ans = ans + person_row["name"]
-        ans += "\n"
         
+    ans += "\\newline"
+    ans += 
+
+
+
+    return ans    
 
 def get_features(con,startime,endtime,debug=False):
     features = general_select_query(con,0,"select * from features", count = "all",debug=debug)
     
     str_features = ""
     for row in features:
-        str_current = get_feature_string(con,feature,startime,endtime,debug=True)
+        str_current = "\\item " + get_feature_string(con,row,startime,endtime,debug=True)
         str_features += str_current
     ans = "\\begin{itemize} " + str_features + " \\end{itemize} " 
-    
+    return ans 
 
 
     
@@ -266,5 +274,5 @@ def generate_and_send_report(config,last_report_generated_time,cur_time,debug=Fa
     
 
 if __name__ == '__main__':
-    config = read_config_file(get_absolute_path("config.ini"))
+    config = read_config_file(get_absolute_path("config2.ini"))
     generate_and_send_report(config, 0, time.time(),True)
