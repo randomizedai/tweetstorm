@@ -10,9 +10,9 @@ from _chrefliterals import WordsDict, findLiterals, TextTag, TextTagList, normLi
 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
-defined_concepts = json.loads(open(BASE_DIR + "/../data/concepts_with_synonyms.json",'r').read())
-pairs = json.loads(open(BASE_DIR + "/../data/issues.json",'r').read())
-weight = json.loads(open(BASE_DIR + "/../data/issue_relevance_score_weight.json",'r').read())
+defined_concepts = json.loads(open(BASE_DIR + "/../../data/concepts_with_synonyms.json",'r').read())
+pairs = json.loads(open(BASE_DIR + "/../../data/issues.json",'r').read())
+weight = json.loads(open(BASE_DIR + "/../../data/issue_relevance_score_weight.json",'r').read())
 
 def read_verbal_ontology(path):
     with open(path + 'verb_vectors/vv-cause.csv', 'r') as f:
