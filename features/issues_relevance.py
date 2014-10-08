@@ -35,7 +35,7 @@ for opt, arg in opts:
     elif opt in ("v", "--verbalmappath"):
         verbal_path = arg
 
-verbal_map = read_verbal_ontology(BASE_DIR + "/../data/")
+verbal_map = read_verbal_ontology(BASE_DIR + "/../../data/")
 result = {}
 if file_type == 'tweet':
 	# text should be in format of json to load tweet
