@@ -58,8 +58,9 @@ def parse_tree_from_file(path_to_parse_trees, separator):
 
 
 def get_stopwords():
-    from nltk.corpus import stopwords
-    return dict.fromkeys(stopwords.words('english'))
+    #from nltk.corpus import stopwords
+    #return dict.fromkeys(stopwords.words('english'))
+    return dict()
 
 # SW like function to get terms from the sentence/articles/text among provided list of concepts
 def get_terms_from_string(sentence, literals):
