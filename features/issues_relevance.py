@@ -50,4 +50,4 @@ elif file_type == 'news' or file_type == 'paper':
 		# if given a json with metadata then use id as file_path
 		result.update(get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map))
 
-print json.dumps(result)
+print ("\n".join([json.dumps({k:v}) for k, v in result.items()]))
