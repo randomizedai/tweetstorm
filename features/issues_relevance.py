@@ -12,7 +12,7 @@ except getopt.GetoptError:
     print 'article_to_issue.py -f <article/file path> -y <type of the file> -i <title if any> -a <abstract if any>'
     sys.exit(2)
 
-file_type = 'news'
+file_type = 'tweet'
 title = None
 text = None
 abstract = None
@@ -49,5 +49,4 @@ elif file_type == 'news' or file_type == 'paper':
 		text = row
 		# if given a json with metadata then use id as file_path
 		result.update(get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map))
-
 print ("\n".join([json.dumps({k:v}) for k, v in result.items()]))

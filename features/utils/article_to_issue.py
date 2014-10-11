@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, json, sys
+import os, json, sys, urllib2
 # NOTE: We need to have get_parse_tree file in the code folder
 sys.path.append(".")
 sys.path.append("/opt/texpp")
@@ -11,8 +11,9 @@ from _chrefliterals import WordsDict, findLiterals, TextTag, TextTagList, normLi
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 defined_concepts = json.loads(open(BASE_DIR + "/../../data/concepts_with_synonyms.json",'r').read())
-pairs = json.loads(open(BASE_DIR + "/../../data/issues.json",'r').read())
+issues = json.load(urllib2.urlopen("http://146.148.70.53/issues/list/?format=json"))
 weight = json.loads(open(BASE_DIR + "/../../data/issue_relevance_score_weight.json",'r').read())
+predicates = json.load(urllib2.urlopen("http://146.148.70.53/issues/predicate/list/?format=json"))
 
 def read_verbal_ontology(path):
     with open(path + 'verb_vectors/vv-cause.csv', 'r') as f:
@@ -51,7 +52,7 @@ def read_verbal_ontology(path):
     # verbs_map['negative'] = negs.keys()
     verbs_map['not_cause'] = not_causes.keys()
     # verbs_map['positive'] = poss.keys()
-    verbs_map['reduce'] = reds.keys()
+    verbs_map['decrease'] = reds.keys()
     return verbs_map
 
 def findWholeWord(w):
@@ -63,8 +64,10 @@ def predicate_synonimization(sentence, verbs_map):
     predicate_set = []
     for k, v in verbs_map.iteritems():
         for verbs in v:
-            if findWholeWord(norm_literal(verbs))(norm_literal(sentence)):
+            if norm_literal(verbs) in norm_literal(sentence):
+            # if findWholeWord(norm_literal(verbs))(norm_literal(sentence)):
                 predicate_set.append(k)
+                break
     return list(set([l for l in predicate_set]))
 
 def main(file_type, text, concepts_to_find, verbal_map):
@@ -129,8 +132,10 @@ def main(file_type, text, concepts_to_find, verbal_map):
                     index = 0 if i < 0 else sorted_tag_list_syn[i][2] + 1
                     sen = text[index:sorted_tag_list_syn[k][2]]
                     predicates = predicate_synonimization(sen, verbal_map)
-                    if predicates:
-                        count_with_sentence_with_both_conceps_predicate += 1
+                    for pred in predicates:
+                        if pred in concepts_to_find[2]:
+                            count_with_sentence_with_both_conceps_predicate += 1
+                            break
                         # print "added count for predicates", 1
             i = k
 
@@ -138,14 +143,13 @@ def main(file_type, text, concepts_to_find, verbal_map):
     indicator['occurrence_of_s_and_o'] = float(count_with_sentence_with_both_conceps) / num_of_sentence
     indicator['occurrence_of_s_and_p_and_o'] = float(count_with_sentence_with_both_conceps_predicate) / num_of_sentence
 
-
     return indicator
 
-def compute_indicators_inner(file_type, text, title, abstract, id_element, verbal_map, pairs):
+def compute_indicators_inner(file_type, text, title, abstract, id_element, verbal_map, triplets):
     total_score = 1 #sum([v for k, v in weight.iteritems()])
     res_ = {}
     res_[id_element] = []
-    for key, value in pairs.items():
+    for key, value in triplets.items():
         indicator_body = main(file_type = file_type, text=text, concepts_to_find=value, verbal_map=verbal_map)
         index_body = sum([weight[k] * v for k, v in indicator_body.iteritems()]) / total_score
         index_title = 0.0
@@ -159,8 +163,19 @@ def compute_indicators_inner(file_type, text, title, abstract, id_element, verba
         index = weight['index_body'] * index_body \
               + weight['index_title'] * index_title \
               + weight['index_abstract'] * index_abstract
-        res_[id_element].append([key, index_body, index_title, index_abstract, index])
+        res_[id_element].append([key, index])
     return res_
+
+# Output: issue_id : [obj_norm_name; subj_norm_name; predicate_name; obj; subj]
+def issues_to_map(issues):
+    triplets = {}
+    for issue in issues['results']:
+        triplets[issue['id']] = [norm_literal(issue['object']['name']), \
+                                    norm_literal(issue['subject']['name']), \
+                                    issue['predicate']['name'], \
+                                    issue['object']['name'],
+                                    issue['subject']['name']]
+    return triplets
 
         
 def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map):
@@ -177,7 +192,8 @@ def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract
         if text == None:
             text = codecs.open(file_path, 'r', 'utf-8').read()
         id_element = file_path
-    
+
+    triplets = issues_to_map(issues)
     # TODO: Check the formal of title and abstract and pass them as text to the function
     res_ = compute_indicators_inner( 
         file_type=file_type, 
@@ -186,7 +202,7 @@ def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract
         abstract=abstract, 
         id_element=id_element, 
         verbal_map=verbal_map, 
-        pairs=pairs)
+        triplets=triplets)
 
     # json_output = json.dumps(res_, indent = 4)
     # # Add time to the file name
@@ -201,20 +217,18 @@ def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract
 
 def rank_resulting_map(result):
     issue_ranking = {}
-    for issue_pair in pairs.keys():
+    for issue_pair in triplets.keys():
         list_ = []
         for k, v in result.items():
             for el in v:
                 if el[0] == issue_pair:
-                    list_.append([k, el[4]])
+                    list_.append([k, el[1]])
         sorted_list = sorted(list_, key = lambda x : x[1], reverse = True)
         issue_ranking[issue_pair] = sorted_list
 
-    tweet_id_text = codecs.open('articles/tweeter_output_supplement.json', 'r', 'utf-8').read()
-    tweet_id_text = json.loads(tweet_id_text)
     for k, v in issue_ranking.items():
         print k
-        print '[%s]' % '\n '.join(map(str, [(vv[0], vv[1], tweet_id_text[vv[0]]) for vv in v if vv[1] > 0][0:10]))
+        print '[%s]' % '\n '.join(map(str, [(vv[0], vv[1]) for vv in v if vv[1] > 0][0:10]))
 
 # if __name__ == "__main__":
 #     import sys, getopt
