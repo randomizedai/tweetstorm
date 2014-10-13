@@ -184,5 +184,5 @@ def get_concepts_from_database(worker_id,count=4,debug=False):
 if __name__ == '__main__':
     pcount = 0
     machine_name = "m1_"
-    while(1):
-        get_concepts_from_database( machine_name + str(pcount),count=4, debug=debug)                
+    #while(1):
+    #    get_concepts_from_database( machine_name + str(pcount),count=4, debug=debug)                

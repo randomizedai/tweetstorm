@@ -204,7 +204,7 @@ def get_multiple_active_rows(con,worker_id,table_name,bool_dict={},count=1,order
     try:
         bool_dict["active_status"] = 0
         ### get row candidate
-        row_candidates = select_from_table(con, worker_id, table_name,"*", bool_dict, order_by, limit=count, debug=debug)
+        row_candidates = select_from_table(con, worker_id, table_name,"*", bool_dict, order_by, limit=count,count = all, debug=debug)
         if not row_candidates:
             return ("no-active-candidate",None)
         if debug:
@@ -212,10 +212,11 @@ def get_multiple_active_rows(con,worker_id,table_name,bool_dict={},count=1,order
         
         ### get lock
         for rc in row_candidates:
+            print rc
             update_table(con, worker_id, table_name, {"active_status":worker_id}, {"id":rc["id"]}, debug)
 
         ##get row status
-        locked_rows = select_from_table(con, worker_id, table_name, "*", {"active_status":worker_id},debug=debug)            
+        locked_rows = select_from_table(con, worker_id, table_name, "*", {"active_status":worker_id},count="all",debug=debug)            
         
         if not locked_rows:
             return("lock-failed",None)
