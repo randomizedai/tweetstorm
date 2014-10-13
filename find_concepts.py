@@ -58,12 +58,14 @@ def run_kpex(filename):
             return ("exception",e)
     seed_score = compute_seed_score(filename)
     if check_file_exists(kpex_filename):    
+        count = 0
         with open(kpex_filename) as fp:
             for line in fp:
-                line = line.strip()
+                count += 1
+                line = line.strip().lower()
                 tokens = line.split()
                 if alpha_string(line) and all ([(x not in stoplists) for x in tokens]):
-                    update_concepts_table(line,seed_score)
+                    update_concepts_table(line,seed_score*1000 + 50000 - count)
     
     
 
@@ -174,7 +176,9 @@ def get_concepts_from_database(worker_id,count=4,debug=False):
                 kpex_filenames_data.append(jobv)
 
             kpex_pool = Pool(len(kpex_filenames_data))
-            kpex_pool.map(run_kpex,kpex_filenames_data)   
+            kpex_pool.map(run_kpex,kpex_filenames_data)
+            kpex_pool.close()
+            kpex_pool.join() 
     except:
         print_exec_error(worker_id)        
             
@@ -184,5 +188,4 @@ def get_concepts_from_database(worker_id,count=4,debug=False):
 if __name__ == '__main__':
     pcount = 0
     machine_name = "m1_"
-    #while(1):
-    #    get_concepts_from_database( machine_name + str(pcount),count=4, debug=debug)                
+    get_concepts_from_database( machine_name + str(pcount),count=4, debug=debug)                

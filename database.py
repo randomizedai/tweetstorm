@@ -168,7 +168,7 @@ def insert_into_table(con,worker_id,table_name,value_dict,debug=False):
         
 def get_active_row(con,worker_id,table_name,bool_dict={},debug=False):
     try:
-        bool_dict["active_status"] = 0
+        bool_dict["active_status"] = "0"
         ### get row candidate
         row_candidate = select_from_table(con, worker_id, table_name,"*", bool_dict, "last_access asc", 1, debug=debug)
         if not row_candidate:
