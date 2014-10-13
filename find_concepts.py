@@ -42,9 +42,9 @@ with open("data/stoplists") as fp:
 def update_concepts_table(concept,score):
     row_concept = general_select_query(con, 0, "select * from topsy_temp where name = \"" + concept + "\"")    
     if row_concept:
-        update_table(con, worker_id, "topsy_temp", {"totalcount":row_concept['totalcount'] + 1,"overallscore":row_concept["overallscore"] + score}, {"name":"concept"})
+        update_table(con, "0", "topsy_temp", {"totalcount":int(row_concept['totalcount']) + 1,"overallscore":float(row_concept["overallscore"]) + score}, {"name":concept})
     else:
-        insert_into_table(con, worker_id, "topsy_temp",{"name":concept,"totalcount":1,"overallscore": score})
+        insert_into_table(con, "0", "topsy_temp",{"name":concept,"totalcount":1,"overallscore": score})
         
                 
 def run_kpex(filename):
@@ -65,7 +65,7 @@ def run_kpex(filename):
                 line = line.strip().lower()
                 tokens = line.split()
                 if alpha_string(line) and all ([(x not in stoplists) for x in tokens]):
-                    update_concepts_table(line,seed_score*1000 + 50000 - count)
+                    update_concepts_table(line,seed_score + 10000 - count)
     
     
 
@@ -159,7 +159,7 @@ def get_concepts_from_database(worker_id,count=4,debug=False):
     try:
         global con
         con = test_and_get_mysql_con(0, con, config, debug)
-        status,concept_rows = get_multiple_active_rows(con, worker_id, "topsy_temp", count=count, debug=True)
+        status,concept_rows = get_multiple_active_rows(con, worker_id, "topsy_temp", count=count,order_by="overallscore desc", debug=True)
         if status == "success":
             download_pool = Pool(len(concept_rows))
             output1 = download_pool.map(get_topsy_tweets,[(x['name'],x['tweets_count']) for x in concept_rows])
@@ -174,7 +174,7 @@ def get_concepts_from_database(worker_id,count=4,debug=False):
             while (not kpex_queue.empty() and len(kpex_filenames_data) < thread_num):
                 jobv = kpex_queue.get()
                 kpex_filenames_data.append(jobv)
-
+            print kpex_filenames_data
             kpex_pool = Pool(len(kpex_filenames_data))
             kpex_pool.map(run_kpex,kpex_filenames_data)
             kpex_pool.close()
@@ -188,4 +188,4 @@ def get_concepts_from_database(worker_id,count=4,debug=False):
 if __name__ == '__main__':
     pcount = 0
     machine_name = "m1_"
-    get_concepts_from_database( machine_name + str(pcount),count=4, debug=debug)                
+    get_concepts_from_database( machine_name + str(pcount),count=4, debug=True)                

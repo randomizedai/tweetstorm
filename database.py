@@ -202,9 +202,9 @@ def get_active_row(con,worker_id,table_name,bool_dict={},debug=False):
         
 def get_multiple_active_rows(con,worker_id,table_name,bool_dict={},count=1,order_by="last_access asc",debug=False):
     try:
-        bool_dict["active_status"] = 0
+        bool_dict["active_status"] = "0"
         ### get row candidate
-        row_candidates = select_from_table(con, worker_id, table_name,"*", bool_dict, order_by, limit=count,count = all, debug=debug)
+        row_candidates = select_from_table(con, worker_id, table_name,"*", bool_dict, order_by, limit=count,count = "all", debug=debug)
         if not row_candidates:
             return ("no-active-candidate",None)
         if debug:
