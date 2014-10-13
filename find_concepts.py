@@ -41,10 +41,10 @@ with open("data/stoplists") as fp:
 
 def update_concepts_table(concept,score):
     print "Concept -->" + str(concept) + " " + str(score)
-    row_concept = general_select_query(con, 0, "select * from topsy_temp where name = \"" + concept + "\"")    
     print "select * from topsy_temp where name = \"" + concept + "\""
-    print "update --> " + str(row_concept) + "  " + str(score)
+    row_concept = general_select_query(con, 0, "select * from topsy_temp where name = \"" + concept + "\"")    
     if row_concept:
+        print "update --> " + str(row_concept) + "  " + str(score)
         update_table(con, "0", "topsy_temp", {"totalcount":int(row_concept['totalcount']) + 1,"overallscore":float(row_concept["overallscore"]) + score}, {"name":concept})
     else:
         print "Inserting Concept --> " + concept
