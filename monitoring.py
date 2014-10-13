@@ -156,12 +156,12 @@ def get_count_files(con,filename_prefix,starttime,endtime,active_machines, debug
     am_string = "(\'" + "\',\'".join(active_machines) + "\')" 
     if endtime == 0:
         ans = general_select_query(con, 0, "select count(*) as count from files where filename LIKE \'"\
-        + filename_prefix + "%\' and machine_name in " + am_string, debug)
+        + filename_prefix + "%\' and machine_name in " + am_string, count="one",debug=debug)
         return ans['count']
     else:
         ans = general_select_query(con, 0, "select count(*) as count from files where filename LIKE \'"\
         + filename_prefix + "%\' and machine_name in " + am_string + " and last_access >= \'" + \
-        str(starttime) + "\' and last_access <= \'" + str(endtime) + "\'" , debug)
+        str(starttime) + "\' and last_access <= \'" + str(endtime) + "\'" ,count = "one", debug=debug)
         return ans['count']   
     return 0  
 
@@ -194,20 +194,20 @@ def get_feature_string(con,feature,starttime,endtime,active_machines,debug=True)
     ans += "Total Number of Output Files :- " + str(cur_output_files) + "{\\newline}"
     statuses_query = "select count(*) as count,fl.status as status from feature_logs fl join features_machines fm where"\
     +" fl.features_machines_id = fm.id and fm.feature_id = " + str(feature['id']) + \
-    " and start_time  >= \'" + str(starttime) + "\' and start_time <= \'" + str(endtime) + " group by fl.status";
-    statuses = general_select_query(con, 0, statuses_query, count="all", debug)
+    " and fl.start_time  >= \'" + str(starttime) + "\' and fl.start_time <= \'" + str(endtime) + "\' group by fl.status";
+    statuses = general_select_query(con, 0, statuses_query, count="all", debug=debug)
     for x in statuses:
-        ans += "Status :: "  + x['status'] + "  Count :: " + x['count'] + "{\\newline}"
+        ans += "Status :: "  + str(x['status']) + "  Count :: " + str(x['count']) + "{\\newline}"
 
 
     return ans    
 
-def get_features(con,startime,endtime,debug=False):
+def get_features(con,startime,endtime,active_machines,debug=False):
     features = general_select_query(con,0,"select * from features", count = "all",debug=debug)
     
     str_features = ""
     for row in features:
-        str_current = "\\item " + get_feature_string(con,row,startime,endtime,debug=True)
+        str_current = "\\item " + get_feature_string(con,row,startime,endtime,active_machines,debug=True)
         str_features += str_current
     ans = "\\begin{itemize} " + str_features + " \\end{itemize} " 
     return ans 
