@@ -17,6 +17,7 @@ from collections import defaultdict
 from ahocorasick import getTagger
 from database import *
 from utils import *
+import timeout_decorator
 
 con = None
 thread_num = 4
@@ -38,10 +39,10 @@ with open("data/stoplists") as fp:
         stoplists.append(line.strip())
 
                
-
-def update_concepts_table(update_list):
-    sorted_update_list = sorted(update_list, key = lambda x: x[0])
-    for concept,score in sorted_update_list:
+@timeout_decorator.timeout(1)
+def update_concepts_table(concept,score):
+#    sorted_update_list = sorted(update_list, key = lambda x: x[0])
+#    for concept,score in sorted_update_list:
         print "Concept -->" + str(concept) + " " + str(score)
         print "select * from topsy_temp where name = \"" + concept + "\""
         row_concept = general_select_query(con, 0, "select * from topsy_temp where name = \"" + concept + "\"")    
@@ -73,8 +74,15 @@ def run_kpex(filename):
                 tokens = line.split()
                 if alpha_string(line) and all ([(x not in stoplists) for x in tokens]):
                     update_list.append((line,seed_score + 10000 - count))
-        update_concepts_table(update_list) 
-    
+        
+        sorted_update_list = sorted(update_list, key = lambda x: x[0])
+        for concept,score in sorted_update_list:
+            for retry in range(0,3): 
+                try:
+                    update_concepts_table(concept,score)
+                    break
+                except:
+                    pass 
 
 
 def download_topsy_tweets(keyword,count,endtime):
