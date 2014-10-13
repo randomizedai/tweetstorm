@@ -15,14 +15,55 @@ import uuid
 import os
 import sys
 import traceback
+import re
+import requests
+import timeout_decorator
+import json
+
+punctuations = ["/","(",")","\\","|", ":",",",";",".","?", "!"]
+quotes = ["\"","\\","\/"]
+clean = re.compile('^[a-z \-]+$')
+
+
+def memo(func):
+    cache = {}
+    @wraps(func)
+    def wrap(*args):
+        if args not in cache:
+            cache[args] = func(*args)
+        return cache[args]
+    return wrap
+
+
+
+def check_file_exists(fn):
+    return os.path.isfile(fn)
+
+def datetimevalue(num):
+    return str(datetime.datetime.fromtimestamp(int(num)).strftime('%Y-%m-%d %H:%M:%S'))
+
+
+@timeout_decorator.timeout(30)
+def get_request(query):
+    r = requests.get(query)
+    return r               
+
+
 
 
 def print_exec_error(worker_id):
     exc_type, exc_obj, exc_tb = sys.exc_info()
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     print("********#####EXCEPTION#####********* taskid--"+ str(worker_id),exc_type, fname, exc_tb.tb_lineno)
+   
         
 
+@memo
+def alpha_string(strv):
+    ltoken = strv.lower()
+    if clean.match(ltoken):
+        return True
+    return False 
 
 def get_absolute_path(relative_path):
     dir = os.path.dirname(__file__)
@@ -109,14 +150,7 @@ def compute_min_time(tweets):
         ans = min([x['created_at'] for x in tweets])
     return ans
 
-def memo(func):
-    cache = {}
-    @wraps(func)
-    def wrap(*args):
-        if args not in cache:
-            cache[args] = func(*args)
-        return cache[args]
-    return wrap
+
 
 def is_ascii(s):
     return all(ord(c) < 128 for c in s)
@@ -126,6 +160,82 @@ def get_dict_from_twitterobject(to):
     for k,v in to.items():
         ans[k] = v
     return ans
+
+
+
+def clean_tweet(tweet_text):
+    tweet_text = tweet_text.strip()
+    
+    
+    tweet_text = tweet_text.replace("\\n"," ").replace("\n", " ").replace("-"," ")
+ 
+    tokens = tweet_text.split()
+    new_tokens = []
+    
+    for token in tokens:
+        
+        if  token == "RT"  or token.startswith("@")   or token.startswith("/") or token.endswith("..."):
+            continue
+        #elif token.startswith("#"):
+        #    new_token = new_token[1:]
+        elif token.startswith("http"):
+            new_token = "."
+        elif token.startswith("&amp"):
+            new_token = "and"    
+        elif token.startswith("&"):
+            continue
+        else:
+            new_token = token    
+        new_tokens.append(new_token)
+    
+    tweet_text = " ".join(new_tokens)     
+    for x in punctuations:
+        tweet_text = tweet_text.replace(x , " " + x + " ")
+       
+    
+    tokens = tweet_text.split()
+    prev_punct = False
+    new_tokens = []
+    for i,token in enumerate(tokens):
+        new_token = ""
+        is_punct = (token in punctuations)
+        if (prev_punct and is_punct) or (is_punct and i == 0):
+            continue
+        else:
+            new_token = token    
+        new_tokens.append(new_token)
+        prev_punct = is_punct  
+          
+    new_text = " ".join(new_tokens)
+    if not new_tokens:
+        return  "NULL_TWEET"      
+    if  not new_text.endswith("."):
+        new_text += " ."
+   
+    for quote in quotes:
+        new_text = new_text.replace(quote," ")
+    new_text = "".join([c for c in new_text if ord(c) < 128])
+    new_text = " ".join(new_text.split())
+    return new_text  
+
+
+def create_clean_tweets_file(filename,clean_filename):
+    tweets = []
+    with open(filename) as fp:
+        for line in fp:
+            try:
+                tw = json.loads(line.strip())
+                tweets.append(tw)
+            except:
+                pass    
+             
+    with open(clean_filename,"w") as fp:
+        for tw in tweets:
+            text = tw['content']
+            clean_text = clean_tweet(text)
+            fp.write(clean_text + "\n")
+
+
 
 def get_dict_from_twitterobject_recursive(to):
     if isinstance(to,TwitterObject) or isinstance(to,dict):

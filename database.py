@@ -198,6 +198,37 @@ def get_active_row(con,worker_id,table_name,bool_dict={},debug=False):
        return ("exception",e)
 
 
+
+        
+def get_multiple_active_rows(con,worker_id,table_name,bool_dict={},count=1,order_by="last_access asc",debug=False):
+    try:
+        bool_dict["active_status"] = 0
+        ### get row candidate
+        row_candidates = select_from_table(con, worker_id, table_name,"*", bool_dict, order_by, limit=count, debug=debug)
+        if not row_candidates:
+            return ("no-active-candidate",None)
+        if debug:
+            print "taskid--" + str(worker_id) + " Row Candidate For Table " + table_name + " -- "  + str(row_candidates) + "   task_id --" + str(worker_id)
+        
+        ### get lock
+        for rc in row_candidates:
+            update_table(con, worker_id, table_name, {"active_status":worker_id}, {"id":rc["id"]}, debug)
+
+        ##get row status
+        locked_rows = select_from_table(con, worker_id, table_name, "*", {"active_status":worker_id},debug=debug)            
+        
+        if not locked_rows:
+            return("lock-failed",None)
+        else:
+            return ("success", locked_rows)
+    except Exception, e:
+       print_exec_error(worker_id)
+       return ("exception",e)
+
+
+
+
+
 def reset_old_table(con,worker_id,table_name,debug=False):
     cur = con.cursor(mdb.cursors.DictCursor)
     cur.execute("UPDATE " + table_name + " SET active_status = 0 where last_access < (NOW() - INTERVAL 15 MINUTE)")
