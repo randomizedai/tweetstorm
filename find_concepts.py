@@ -16,7 +16,7 @@ import multiprocessing
 from collections import defaultdict
 from ahocorasick import getTagger
 from database import *
-from util import *
+from utils import *
 
 con = None
 thread_num = 4

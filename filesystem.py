@@ -6,7 +6,7 @@ Created on Aug 6, 2014
 
 import os
 import json
-from util import *
+from utils import *
 
 def make_dir(path):
     try:

@@ -6,7 +6,7 @@ Created on Aug 6, 2014
 All the database handling
 '''
 import MySQLdb as mdb
-from util import *
+from utils import *
 from datetime import datetime
 import sys
 '''

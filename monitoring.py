@@ -9,7 +9,7 @@ import smtplib,email,email.encoders,email.mime.text,email.mime.base,ntpath
 import numpy as np
 import time
 from database import *
-from util import *
+from utils import *
 texcommand = "/usr/bin/pdflatex"
 import os
 

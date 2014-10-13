@@ -6,7 +6,7 @@ Created on Aug 6, 2014
 Scheduling Algorithms to pick the next query
 '''
 from database import *
-from util import *
+from utils import *
 from random import randint
 # query type corresponds to table_name
 def last_accessed_first(con,worker_id,debug=False):

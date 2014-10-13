@@ -13,7 +13,7 @@ from scheduler import *
 from search_api import *
 from process_tweets import *
 from filesystem import *
-from util import *
+from utils import *
 from celery import Celery
 import traceback
 from compute_features import *

@@ -4,7 +4,7 @@ Created on Sep 17, 2014
 @author: Amit
 '''
 import os
-from util import *
+from utils import *
 import subprocess
 
 def compute_feature(feature_row,file_row,worker_id,debug=False):

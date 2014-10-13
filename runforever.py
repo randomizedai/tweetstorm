@@ -7,7 +7,7 @@ import sys
 import time
 from main import *
 import MySQLdb as mdb
-from util import *
+from utils import *
 from database import *
 from monitoring import *
 from celery.task.control import discard_all

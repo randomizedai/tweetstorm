@@ -9,7 +9,7 @@ Initialize the Database
 
 import MySQLdb as mdb
 from database import *
-from util import *
+from utils import *
 
 config = read_config_file(get_absolute_path("config.ini"))
 con = get_mysql_con(0, config, debug=False)
