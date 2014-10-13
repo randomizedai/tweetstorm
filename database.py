@@ -153,12 +153,16 @@ def get_id(con,worker_id,table_name,bool_dict,debug=False):
     return ans["id"]
 
 
-def insert_into_table(con,worker_id,table_name,value_dict,debug=False):
+def insert_into_table(con,worker_id,table_name,value_dict,debug=False,insert_ignore=False):
     cur = con.cursor(mdb.cursors.DictCursor)
     kv_pairs = [ (x,y) for (x,y) in value_dict.items() if y != None]
     col_name_string = ",".join([x[0] for x in kv_pairs])
     values_string = ",".join([value_string(x[1]) for x in kv_pairs])
-    query = "INSERT INTO " + table_name + "(" + col_name_string + ") VALUES ( " + values_string + ")"
+    query = ""
+    if insert_ignore:
+        query = "INSERT IGNORE INTO " + table_name + "(" + col_name_string + ") VALUES ( " + values_string + ")"
+    else:
+        query = "INSERT INTO " + table_name + "(" + col_name_string + ") VALUES ( " + values_string + ")"
     if debug:
         print "taskid--" + str(worker_id) + " " + query
     cur.execute(query)

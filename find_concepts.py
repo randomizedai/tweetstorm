@@ -40,11 +40,15 @@ with open("data/stoplists") as fp:
                
 
 def update_concepts_table(concept,score):
+    print "Concept -->" + str(concept) + " " + str(score)
     row_concept = general_select_query(con, 0, "select * from topsy_temp where name = \"" + concept + "\"")    
+    print "select * from topsy_temp where name = \"" + concept + "\""
+    print "update --> " + str(row_concept) + "  " + str(score)
     if row_concept:
         update_table(con, "0", "topsy_temp", {"totalcount":int(row_concept['totalcount']) + 1,"overallscore":float(row_concept["overallscore"]) + score}, {"name":concept})
     else:
-        insert_into_table(con, "0", "topsy_temp",{"name":concept,"totalcount":1,"overallscore": score})
+        print "Inserting Concept --> " + concept
+        insert_into_table(con, "0", "topsy_temp",{"name":concept,"totalcount":1,"overallscore": score},insert_ignore = True)
         
                 
 def run_kpex(filename):
@@ -171,6 +175,7 @@ def get_concepts_from_database(worker_id,count=4,debug=False):
     try:
         global con
         con = test_and_get_mysql_con(0, con, config, debug)
+        con.autocommit(True)
         status,concept_rows = get_multiple_active_rows(con, worker_id, "topsy_temp", count=count,order_by="overallscore desc", debug=True)
         if status == "success":
             download_pool = Pool(len(concept_rows))
