@@ -39,16 +39,18 @@ with open("data/stoplists") as fp:
 
                
 
-def update_concepts_table(concept,score):
-    print "Concept -->" + str(concept) + " " + str(score)
-    print "select * from topsy_temp where name = \"" + concept + "\""
-    row_concept = general_select_query(con, 0, "select * from topsy_temp where name = \"" + concept + "\"")    
-    if row_concept:
-        print "update --> " + str(row_concept) + "  " + str(score)
-        update_table(con, "0", "topsy_temp", {"totalcount":int(row_concept['totalcount']) + 1,"overallscore":float(row_concept["overallscore"]) + score}, {"name":concept})
-    else:
-        print "Inserting Concept --> " + concept
-        insert_into_table(con, "0", "topsy_temp",{"name":concept,"totalcount":1,"overallscore": score},insert_ignore = True)
+def update_concepts_table(update_list):
+    sorted_update_list = sorted(update_list, key = lambda x: x[0])
+    for concept,score in sorted_update_list:
+        print "Concept -->" + str(concept) + " " + str(score)
+        print "select * from topsy_temp where name = \"" + concept + "\""
+        row_concept = general_select_query(con, 0, "select * from topsy_temp where name = \"" + concept + "\"")    
+        if row_concept:
+            print "update --> " + str(row_concept) + "  " + str(score)
+            update_table(con, "0", "topsy_temp", {"totalcount":int(row_concept['totalcount']) + 1,"overallscore":float(row_concept["overallscore"]) + score}, {"name":concept})
+        else:
+            print "Inserting Concept --> " + concept
+            insert_into_table(con, "0", "topsy_temp",{"name":concept,"totalcount":1,"overallscore": score},insert_ignore = True)
         
                 
 def run_kpex(filename):
@@ -63,14 +65,15 @@ def run_kpex(filename):
     seed_score = compute_seed_score(filename)
     if check_file_exists(kpex_filename):    
         count = 0
+        update_list = []
         with open(kpex_filename) as fp:
             for line in fp:
                 count += 1
                 line = line.strip().lower()
                 tokens = line.split()
                 if alpha_string(line) and all ([(x not in stoplists) for x in tokens]):
-                    update_concepts_table(line,seed_score + 10000 - count)
-    
+                    update_list.append((line,seed_score + 10000 - count))
+        update_concepts_table(update_list) 
     
 
 
