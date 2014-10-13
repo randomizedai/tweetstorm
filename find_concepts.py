@@ -78,6 +78,9 @@ def download_topsy_tweets(keyword,count,endtime):
     cur_time = endtime
     print "Downloading data for " + keyword
     dictv = {}
+    sum_tg = 0
+    count_tg = 0
+    
     while (download_count < count):
         retry_count = 0
         ts = int(time.time()*1000)
@@ -105,7 +108,10 @@ def download_topsy_tweets(keyword,count,endtime):
             lent = len(js['response']['list'])
             if lent == 0:
                 break
-            
+            startt = js['response']['list'][0]['trackback_date']
+            endt = js['response']['list'][-1]['trackback_date']
+            sum_tg  += (int(endt) - int(startt)) / lent
+            count_tg += 1
             for tweet in js['response']['list']:
                 text = tweet['content']
                 if text[0:50] not in dictv:
@@ -114,9 +120,14 @@ def download_topsy_tweets(keyword,count,endtime):
                     ans_list.append(tweet)
         else:
             break
+        
+        
             
         cur_time = starttime
-    return ans_list    
+    rate = 0    
+    if count_tg > 0:
+        rate = sum_tg * 1.0 / count_tg    
+    return ans_list,rate    
 
 
 
@@ -140,7 +151,8 @@ def get_topsy_tweets(data):
     tweets = []
     if not check_file_exists(filename):
         with open(filename,"w") as fp:
-            tweets = download_topsy_tweets(keyword,tweet_count,endtime)
+            tweets,rate = download_topsy_tweets(keyword,tweet_count,endtime)
+            update_table(con, "0", "topsy_temp", {"frequency":rate}, {"name":keyword}, debug=False)
             for tw in tweets:
                 fp.write(json.dumps(tw) + "\n")
                 
