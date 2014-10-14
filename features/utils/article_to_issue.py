@@ -11,9 +11,9 @@ from _chrefliterals import WordsDict, findLiterals, TextTag, TextTagList, normLi
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 defined_concepts = json.loads(open(BASE_DIR + "/../../data/concepts_with_synonyms.json",'r').read())
-issues = json.load(urllib2.urlopen("http://146.148.70.53/issues/list/?format=json"))
+issues = "http://146.148.70.53/issues/list/?format=json"
 weight = json.loads(open(BASE_DIR + "/../../data/issue_relevance_score_weight.json",'r').read())
-predicates = json.load(urllib2.urlopen("http://146.148.70.53/issues/predicate/list/?format=json"))
+# preds = json.load(urllib2.urlopen("http://146.148.70.53/issues/predicate/list/?format=json"))
 
 def read_verbal_ontology(path):
     with open(path + 'verb_vectors/vv-cause.csv', 'r') as f:
@@ -167,14 +167,18 @@ def compute_indicators_inner(file_type, text, title, abstract, id_element, verba
     return res_
 
 # Output: issue_id : [obj_norm_name; subj_norm_name; predicate_name; obj; subj]
-def issues_to_map(issues):
+def issues_to_map(path):
     triplets = {}
-    for issue in issues['results']:
-        triplets[issue['id']] = [norm_literal(issue['object']['name']), \
-                                    norm_literal(issue['subject']['name']), \
-                                    issue['predicate']['name'], \
-                                    issue['object']['name'],
-                                    issue['subject']['name']]
+    next = path
+    while next:
+        issues = json.load(urllib2.urlopen(next))
+        for issue in issues['results']:
+            triplets[issue['id']] = [norm_literal(issue['object']['name']), \
+                                        norm_literal(issue['subject']['name']), \
+                                        issue['predicate']['name'], \
+                                        issue['object']['name'],
+                                        issue['subject']['name']]
+        next = issues['next']
     return triplets
 
         
