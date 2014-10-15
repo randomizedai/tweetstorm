@@ -6,7 +6,7 @@ Created on Aug 6, 2014
 All the database handling
 '''
 import MySQLdb as mdb
-from util import *
+from utils import *
 from datetime import datetime
 import sys
 '''
@@ -153,12 +153,16 @@ def get_id(con,worker_id,table_name,bool_dict,debug=False):
     return ans["id"]
 
 
-def insert_into_table(con,worker_id,table_name,value_dict,debug=False):
+def insert_into_table(con,worker_id,table_name,value_dict,debug=False,insert_ignore=False):
     cur = con.cursor(mdb.cursors.DictCursor)
     kv_pairs = [ (x,y) for (x,y) in value_dict.items() if y != None]
     col_name_string = ",".join([x[0] for x in kv_pairs])
     values_string = ",".join([value_string(x[1]) for x in kv_pairs])
-    query = "INSERT INTO " + table_name + "(" + col_name_string + ") VALUES ( " + values_string + ")"
+    query = ""
+    if insert_ignore:
+        query = "INSERT IGNORE INTO " + table_name + "(" + col_name_string + ") VALUES ( " + values_string + ")"
+    else:
+        query = "INSERT INTO " + table_name + "(" + col_name_string + ") VALUES ( " + values_string + ")"
     if debug:
         print "taskid--" + str(worker_id) + " " + query
     cur.execute(query)
@@ -168,7 +172,7 @@ def insert_into_table(con,worker_id,table_name,value_dict,debug=False):
         
 def get_active_row(con,worker_id,table_name,bool_dict={},debug=False):
     try:
-        bool_dict["active_status"] = 0
+        bool_dict["active_status"] = "0"
         ### get row candidate
         row_candidate = select_from_table(con, worker_id, table_name,"*", bool_dict, "last_access asc", 1, debug=debug)
         if not row_candidate:
@@ -196,6 +200,38 @@ def get_active_row(con,worker_id,table_name,bool_dict={},debug=False):
     except Exception, e:
        print_exec_error(worker_id)
        return ("exception",e)
+
+
+
+        
+def get_multiple_active_rows(con,worker_id,table_name,bool_dict={},count=1,order_by="last_access asc",debug=False):
+    try:
+        bool_dict["active_status"] = "0"
+        ### get row candidate
+        row_candidates = select_from_table(con, worker_id, table_name,"*", bool_dict, order_by, limit=count,count = "all", debug=debug)
+        if not row_candidates:
+            return ("no-active-candidate",None)
+        if debug:
+            print "taskid--" + str(worker_id) + " Row Candidate For Table " + table_name + " -- "  + str(row_candidates) + "   task_id --" + str(worker_id)
+        
+        ### get lock
+        for rc in row_candidates:
+            print rc
+            update_table(con, worker_id, table_name, {"active_status":worker_id}, {"id":rc["id"]}, debug)
+
+        ##get row status
+        locked_rows = select_from_table(con, worker_id, table_name, "*", {"active_status":worker_id},count="all",debug=debug)            
+        
+        if not locked_rows:
+            return("lock-failed",None)
+        else:
+            return ("success", locked_rows)
+    except Exception, e:
+       print_exec_error(worker_id)
+       return ("exception",e)
+
+
+
 
 
 def reset_old_table(con,worker_id,table_name,debug=False):

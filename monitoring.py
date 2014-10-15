@@ -9,7 +9,7 @@ import smtplib,email,email.encoders,email.mime.text,email.mime.base,ntpath
 import numpy as np
 import time
 from database import *
-from util import *
+from utils import *
 texcommand = "/usr/bin/pdflatex"
 import os
 
@@ -154,7 +154,7 @@ def get_top_keywords(con,starttime,endtime,debug=False):
 
 def get_count_files(con,filename_prefix,starttime,endtime,active_machines, debug = True):
     am_string = "(\'" + "\',\'".join(active_machines) + "\')" 
-    if endtime == 0:
+    if endtime == 0: # means all files
         ans = general_select_query(con, 0, "select count(*) as count from files where filename LIKE \'"\
         + filename_prefix + "%\' and machine_name in " + am_string, count="one",debug=debug)
         return ans['count']
@@ -178,11 +178,11 @@ def get_feature_string(con,feature,starttime,endtime,active_machines,debug=True)
     cur_output_files = 0    
     ans += "{\\newline}"
     if feature['input_feature']:
-        total_input_files = get_count_files(con,feature['input_feature'],0,time.time(),active_machines,debug) 
+        total_input_files = get_count_files(con,feature['input_feature'],0,0,active_machines,debug) 
         cur_input_files = get_count_files(con,feature['input_feature'],starttime,endtime,active_machines,debug) 
     
     if feature['output_feature']:
-        total_output_files = get_count_files(con,feature['output_feature'],0,time.time(),active_machines,debug) 
+        total_output_files = get_count_files(con,feature['output_feature'],0,0,active_machines,debug) 
         cur_output_files = get_count_files(con,feature['output_feature'],starttime ,endtime,active_machines,debug) 
     
     

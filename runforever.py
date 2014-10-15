@@ -7,7 +7,7 @@ import sys
 import time
 from main import *
 import MySQLdb as mdb
-from util import *
+from utils import *
 from database import *
 from monitoring import *
 from celery.task.control import discard_all
@@ -28,7 +28,7 @@ def main_loop(debug=False):
     
     count = max(ans1['max'],ans2['max']) + 1 
     feature_count = max(feature_ans1['max'],feature_ans2['max']) + 1
-    generate_report_nth_hour = 3
+    generate_report_nth_hour = 24
     clean_auths_hour = 0.083  #(5 minutes)
     last_cleaned_auths_time = time.time()
     last_report_generated_time = time.time()

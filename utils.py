@@ -268,8 +268,7 @@ def config_section_map(config, section):
 def get_filename_from_path(path):
     return ntpath.basename(path)
 
-def get_filename_from_path(path):
-    return ntpath.basename(path)
+
 
 
 if __name__ == '__main__':

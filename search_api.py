@@ -8,7 +8,7 @@ For making calls to Search API of Twitter
 
 
 from birdy.twitter import *
-from util import *
+from utils import *
 from database import *
 import time
 import timeout_decorator
