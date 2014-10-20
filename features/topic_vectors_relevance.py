@@ -41,9 +41,9 @@ if file_type == "twitter":
 	topic_vector_map = read_topic_vectors(model_path, general_concepts_map, labels_map, file_type)
 	document_topic_relevance = rank_element_to_topics(model_path, labels_map, docs_occurrence, tweets)
 
-	open(BASE_DIR + '/work/docs_occurrenceAMIT_DEF_LABELS_N.json', 'w').write("\n".join([json.dumps({k:v}) for k, v in docs_occurrence.items()]))
-	open(BASE_DIR + '/work/topic_vector_mapAMIT_DEF_LABELS_N.json', 'w').write("\n\n".join([json.dumps({k:v}) for k, v in topic_vector_map.items()]))
-	open(BASE_DIR + '/work/document_topic_relevanceAMIT_DEF_LABELS_N.json', 'w').write("\n\n".join([json.dumps({k:v['topics']}) for k, v in document_topic_relevance.items()]))
+	# open(BASE_DIR + '/work/docs_occurrenceAMIT_DEF_LABELS_N.json', 'w').write("\n".join([json.dumps({k:v}) for k, v in docs_occurrence.items()]))
+	# open(BASE_DIR + '/work/topic_vector_mapAMIT_DEF_LABELS_N.json', 'w').write("\n\n".join([json.dumps({k:v}) for k, v in topic_vector_map.items()]))
+	# open(BASE_DIR + '/work/document_topic_relevanceAMIT_DEF_LABELS_N.json', 'w').write("\n\n".join([json.dumps({k:v['topics']}) for k, v in document_topic_relevance.items()]))
 	print("\n".join([json.dumps({k:v}) for k, v in topic_vector_map.items()]))
 	print("\n\n")
 	print("\n".join([json.dumps({k:v['topics']}) for k, v in document_topic_relevance.items()]))
