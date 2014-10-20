@@ -4,13 +4,14 @@ sys.path.append("/opt/texpp")
 from article_to_issue import *
 from outputVerbalPhrase import * 
 
-BASE_DIR = os.path.dirname(os.path.realpath(__file__))  #"/vagrant/julia/VerbalPhraseDetection/tweetstorm/features/utils"
-
 class ConceptOccurrence:
-	def __init__(self, text):
+	def __init__(self, text, doc_type):
+		self.title = ""
+		self.abstract = ""
 		self.text = text
-		self.preprocessed = ""
-		self.occurrence_map = None
+		self.preprocessed = ""		
+		self.doc_type = doc_type
+		self.occurrence_map = {}
 
 	def __repr__(self):
 		str_ = ';'.join(map(str, [(k, v) for k, v in self.occurrence_map.items()]))
@@ -27,8 +28,10 @@ class ConceptOccurrence:
 		dict_to_check = dict([(l.encode('utf-8'), 1) for l in general_concepts_map.keys()])
 		tag_list = get_terms_from_string(self.text, dict_to_check)
 		tag_tuple_list_general = [(l.value, l.start, l.end) for l in tag_list]
-		tag_tuple_list_general.extend(tag_tuple_list)
 		self.preprocessed = [el[0] for el in tag_tuple_list_general]
+		for el in tag_tuple_list:
+			if el[0] not in self.preprocessed:
+				self.preprocessed.append(el[0])
 		# sorted_tag_list = sorted(tag_tuple_list, key=lambda x: x[1])
 		# for i, el in enumerate(sorted_tag_list):
 		# 	index = 0 if i == 0 else sorted_tag_list[i-1][2]
@@ -38,52 +41,81 @@ class ConceptOccurrence:
 
 			
 	"""
-	concepts_map is a map with terms and their synonyms
-	concepts_map = {norm_name: (norm, norm_name_of_main_concept)}
+	labels_map is a map with terms and their synonyms
+	labels_map = {norm_name: (norm, norm_name_of_main_concept)}
 	"""
-	def process_text_with_occurrence(self, concepts_map, general_concepts_map):
-		dict_to_check = dict([(l.encode('utf-8'), 1) for l in concepts_map.keys()])
-		tag_list = get_terms_from_string(self.text, dict_to_check)
+	def process_text_with_occurrence(self, text, labels_map, general_concepts_map, multiplier=1):
+		dict_to_check = dict([(l.encode('utf-8'), 1) for l in labels_map.keys()])
+		tag_list = get_terms_from_string(text, dict_to_check)
 		if len(tag_list) == 0:
 			return None
 		tag_tuple_list = [(l.value, l.start, l.end) for l in tag_list]
 		tag_tuple_list_syn = []
 		for el in tag_tuple_list:
-			tag_tuple_list_syn.append( (concepts_map[el[0]][1], el[1], el[2]) )
-		self.update_text_with_underscores(tag_tuple_list_syn, general_concepts_map)
-		occurrence_count  = {}
+			tag_tuple_list_syn.append( (labels_map[el[0]][1], el[1], el[2]) )
+		self.update_text_with_underscores(tag_tuple_list, general_concepts_map)
 		for el in tag_tuple_list_syn:
-			if el[0] in occurrence_count:
-				occurrence_count[el[0]] += 1
+			if el[0] in self.occurrence_map:
+				self.occurrence_map[el[0]] += 1 * multiplier
 			else:
-				occurrence_count[el[0]] = 1
-			if el[1] > 0 and (self.text[el[1]-1] == "#" or self.text[el[1]-1] == "@"):
-				occurrence_count[el[0]] += 1
-		return occurrence_count
+				self.occurrence_map[el[0]] = 1 * multiplier
+			if el[1] > 0 and (text[el[1]-1] == "#" or text[el[1]-1] == "@"):
+				self.occurrence_map[el[0]] += 1
 
 
 	"""
-	Result as occurence of termsin concepts_map
+	Result as occurence of termsin labels_map
 	plus update to the concepts in the dependency_tree
 	Important: Hierarchy is a list where dependent elements should be places further:
 	if a ->b,c,d and d -> e,g, then hierarchy should be [d ->e,g; a ->d,...]
 	"""
-	def get_occurrence_count(self, concepts_map, hierarchy, general_concepts_map):
-		occurrence_map = self.process_text_with_occurrence(concepts_map, general_concepts_map)
-		if occurrence_map is not None:
+	def get_occurrence_count(self, labels_map, hierarchy, general_concepts_map):
+		self.process_text_with_occurrence(self.text, labels_map, general_concepts_map, multiplier = 1)
+		if self.title:
+			self.process_text_with_occurrence(self.title, labels_map, general_concepts_map, multiplier = 2)
+		if self.abstract:
+			self.process_text_with_occurrence(self.abstract, labels_map, general_concepts_map, multiplier = 1)
+		if self.occurrence_map is not None:
 			for kv in hierarchy:
 				for v in kv.values()[0]:
-					if v in occurrence_map.keys():
-						if kv.keys()[0] in occurrence_map.keys():
-							occurrence_map[kv.keys()[0]] += occurrence_map[v]
+					if v in self.occurrence_map.keys():
+						if kv.keys()[0] in self.occurrence_map.keys():
+							self.occurrence_map[kv.keys()[0]] += self.occurrence_map[v]
 						else:
-							occurrence_map[kv.keys()[0]] = occurrence_map[v]
-		self.occurrence_map = occurrence_map
+							self.occurrence_map[kv.keys()[0]] = self.occurrence_map[v]
 
-	def rank_element_to_topics(self, concepts_vectors):
-		pass
 
-		
+def articles_to_map(path_list, path, pages=None):
+	articles = {}
+	next = path_list
+	counter = 0
+	if pages is None:
+		pages = json.load(urllib2.urlopen(next))["count"]
+	while next and counter < pages:
+		page = json.load(urllib2.urlopen(next))
+		for p in page['results']:
+			doc_text = json.load( urllib2.urlopen( path + str(p['id']) ) )['plain_text']
+			articles[p['id']] = {'title': p['title'], 'body' : doc_text}
+		next = page['next']
+		counter += 1
+	return articles
+
+def tweets_to_map(path_list, path, pages=None):
+	tweets = {}
+	next = path_list
+	counter = 0
+	if pages is None:
+		pages = json.load(urllib2.urlopen(next))["count"]
+	while next and counter < pages:
+		page = json.load(urllib2.urlopen(next))
+		for p in page['results']:
+			doc_text = p['text']
+			tweets[p['tweet_id']] = {'text' : doc_text}
+		next = page['next']
+		counter += 1
+	return tweets
+
+
 def load_csv_terms(path):
 	import csv
 	f = open(path, 'r')
@@ -122,14 +154,14 @@ def llda_learn(tmt, script, output_folder, corpus, labels, semisupervised=False)
 		for i, label in enumerate(labels):
 			# Write label(s) for each document
 			if label:
-				text = '\"' + ' '.join(corpus[i]) + '\"'
+				text = '\"' + ' '.join(corpus[i][1]) + '\"'
 				labels_str = ' '.join(label)
-				line = ','.join([str(i), labels_str, text]) + '\n'
+				line = ','.join([str(corpus[i][0]), labels_str, text]) + '\n'
 				f.write(line)
 			elif semisupervised:
-				text = '\"' + ' '.join(corpus[i]) + '\"'
+				text = '\"' + ' '.join(corpus[i][1]) + '\"'
 				labels_str = all_labels
-				line = ','.join([str(i), labels_str, text]) + '\n'
+				line = ','.join([str(corpus[i][0]), labels_str, text]) + '\n'
 				f.write(line)
 			else:
 				pass
@@ -158,19 +190,20 @@ def llda_learn(tmt, script, output_folder, corpus, labels, semisupervised=False)
 
 def wrap_llda(docs_occurrence):
 	import os
-	model_path = BASE_DIR + '/work/llda_model/'
+	BASE_DIR_UTIL = os.path.dirname(os.path.realpath(__file__))  #"/vagrant/julia/VerbalPhraseDetection/tweetstorm/features/utils"
+	model_path = BASE_DIR_UTIL + '/work/llda_model/'
 	if not os.path.exists(model_path):
 		os.makedirs(model_path)
-	llda_learn_script = BASE_DIR + '/6-llda-learn.scala'
-	tmt_file = BASE_DIR + '/tmt-0.4.0.jar'
+	llda_learn_script = BASE_DIR_UTIL + '/6-llda-learn.scala'
+	tmt_file = BASE_DIR_UTIL + '/tmt-0.4.0.jar'
 	# Write data set (corpus, labels) of labeled documents to file
-	corpus = [v['preprocessed'] for k, v in docs_occurrence.items() if v]
+	corpus = [(k, v['preprocessed']) for k, v in docs_occurrence.items() if v]
 	labels = [[ el[0]for el in v['occurrence_map']] for k, v in docs_occurrence.items() if v]
 	# Run Stanford TMT LLDA training and store results in model_path
 	llda_learn(tmt_file, llda_learn_script, model_path, corpus, labels, semisupervised=False)
 	return model_path
 
-def read_topic_vectors(model_path, general_concepts_map, concepts_map):
+def read_topic_vectors(model_path, general_concepts_map, labels_map, file_type=""):
 	import csv
 	topic_map = {}
 	with open(model_path + "01500/summary.txt", 'r') as f:
@@ -182,20 +215,20 @@ def read_topic_vectors(model_path, general_concepts_map, concepts_map):
 		for el in rows:
 			if len(el) > 0:
 				if el[0]:
-					current_topic = concepts_map[el[0]][0]
-					topic_map[current_topic] = []
+					current_topic = labels_map[el[0]][0]
+					topic_map[current_topic] = {"concepts": [], "source" : file_type, 'norm_name': el[0]}
 					current_score = float(el[2])
 				else:
-					score = float(el[2]) / current_score
+					score = float(el[2]) / current_score if current_score > 0 else 0
 					if el[1] in general_concepts_map:
 						element = general_concepts_map[el[1]]
-						topic_map[current_topic].append( [element, score] )
-					elif el[1] in concepts_map:
-						element = concepts_map[el[1]][0]
-						topic_map[current_topic].append( [element, score] )
+						topic_map[current_topic]["concepts"].append( [element, el[1], score] )
+					elif el[1] in labels_map:
+						element = labels_map[el[1]][0]
+						topic_map[current_topic]["concepts"].append( [element, el[1], score] )
 	return topic_map
 
-def rank_element_to_topics(model_path, concepts_map):
+def rank_element_to_topics(model_path, labels_map, docs_occurrence, tweets_map={}):
 	import csv
 	labels = {}
 	docs = {}
@@ -203,7 +236,7 @@ def rank_element_to_topics(model_path, concepts_map):
 		counter = 0
 		for el in f_labels.readlines():
 			if el:
-				labels[counter] = concepts_map[el.strip()][0]
+				labels[counter] = labels_map[el.strip()][0]
 				counter += 1
 	with open(model_path + "document-topic-distributions.csv", 'r') as f:
 		data = csv.reader(f, delimiter=',')
@@ -211,29 +244,14 @@ def rank_element_to_topics(model_path, concepts_map):
 		del data
 	for row in rows:
 		if row:
-			docs[row[0]] = []
+			tweet_id = str(row[0])
+			if tweets_map:
+				tweet_text =  tweets_map[row[0]]
+			else:
+				tweet_text = ""
+			if tweet_id not in docs_occurrence:
+				print tweet_id
+			docs[ tweet_id ] = { 'text': tweet_text, 'preprocesed' : docs_occurrence[tweet_id]["preprocessed"], 'labels_map' : docs_occurrence[tweet_id]["occurrence_map"], 'topics' : [] }
 			for i in xrange(1, len(row) - 1, 2):
-				docs[row[0]].append( [labels[int(row[i])], row[i + 1]] )
+				docs[ tweet_id  ]['topics'].append( [labels[int(row[i])], norm_literal(labels[int(row[i])]), row[i + 1]] )
 	return docs
-
-
-if __name__ == "__main__":
-	import json
-	docs_occurrence = {}
-	hierarchy = json.loads(open(BASE_DIR + '/../../data/hierarchy_for_topics.json', 'r').read())
-	concepts_map = json.loads(open(BASE_DIR + '/../../data/concepts_for_topics.json', 'r').read())
-	general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/climatelex.csv')  #json.load(urllib2.urlopen("???"))
-	for row in sys.stdin: #open(BASE_DIR + "/../demo.json", 'r').readlines():
-		tweet = json.loads(row)
-		occurrence = ConceptOccurrence(tweet['text'])
-		occurrence.get_occurrence_count(concepts_map, hierarchy, general_concepts_map)
-		docs_occurrence[tweet['id_str']] = occurrence.struct_to_map()
-	
-	model_path = wrap_llda(docs_occurrence)
-	topic_vector_map = read_topic_vectors(model_path, general_concepts_map, concepts_map)
-	document_topic_relevance = rank_element_to_topics(model_path, concepts_map)
-	
-	open(BASE_DIR + '/work/docs_occurrence.json', 'w').write("\n".join([json.dumps({k:v}) for k, v in docs_occurrence.items()]))
-	open(BASE_DIR + '/work/topic_vector_map.json', 'w').write("\n".join([json.dumps({k:v}) for k, v in topic_vector_map.items()]))
-	open(BASE_DIR + '/work/document_topic_relevance.json', 'w').write("\n".join([json.dumps({k:v}) for k, v in document_topic_relevance.items()]))
-
