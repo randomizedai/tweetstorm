@@ -96,8 +96,8 @@ def articles_to_map(path_list, path, pages=None):
 		for p in page['results']:
 			doc_text = json.load( urllib2.urlopen( path + str(p['id']) ) )['plain_text']
 			articles[p['id']] = {'title': p['title'], 'body' : doc_text}
+			counter += 1
 		next = page['next']
-		counter += 1
 	return articles
 
 def tweets_to_map(path_list, path, pages=None):
@@ -107,7 +107,13 @@ def tweets_to_map(path_list, path, pages=None):
 	if pages is None:
 		pages = json.load(urllib2.urlopen(next))["count"]
 	while next and counter < pages:
-		page = json.load(urllib2.urlopen(next))
+		if counter % 100 == 0:
+			print "read 100 more pages"
+		try:
+			page = json.load(urllib2.urlopen(next))
+		except Exception, e:
+			print e
+			return tweets
 		for p in page['results']:
 			doc_text = p['text']
 			tweets[p['tweet_id']] = {'text' : doc_text}
