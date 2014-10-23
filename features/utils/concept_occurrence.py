@@ -134,7 +134,7 @@ def load_csv_terms(path):
 			terms_map[norm] = el
 	return terms_map
 
-def llda_learn(tmt, script, output_folder, corpus, labels, semisupervised=False):
+def llda_learn(output_folder, corpus, labels, semisupervised=False):
 	import os, codecs
 	from tempfile import NamedTemporaryFile
 	""" Takes the processed text corpus, labels for each document, and writes
@@ -151,20 +151,27 @@ def llda_learn(tmt, script, output_folder, corpus, labels, semisupervised=False)
 	none
 	"""
 	if semisupervised:
+		#TODO: change to the '#'.join(...)
 		all_labels = ' '.join(set(reduce(list.__add__, labels)))
 
 	fh = NamedTemporaryFile(delete=False)
-	filename = fh.name
+	filename = 'input.txt' #fh.name
 	fh.close()
 	with codecs.open(filename, 'w', 'utf-8') as f:
 		for i, label in enumerate(labels):
 			# Write label(s) for each document
 			if label:
-				text = '\"' + ' '.join(corpus[i][1]) + '\"'
-				labels_str = ' '.join(label)
-				line = ','.join([str(corpus[i][0]), labels_str, text]) + '\n'
-				f.write(line)
+				# TODO: delete quotes
+				# text = '\"' + ' '.join(corpus[i][1]) + '\"'
+				text = ' '.join(corpus[i][1])
+				# TODO: change to '#'.join([...])
+				# labels_str = ' '.join(label)
+				labels_str = '#'.join(label)
+				if labels_str:
+					line = ' '.join([str(corpus[i][0]), labels_str, text]) + '\n'
+					f.write(line)
 			elif semisupervised:
+				# delete quotes
 				text = '\"' + ' '.join(corpus[i][1]) + '\"'
 				labels_str = all_labels
 				line = ','.join([str(corpus[i][0]), labels_str, text]) + '\n'
@@ -183,13 +190,16 @@ def llda_learn(tmt, script, output_folder, corpus, labels, semisupervised=False)
 		"""
 		import subprocess
 		# Delete existing output folder, if applicable
-		remove_folder = ['rm', '-r', output_folder]
-		try:
-			subprocess.call(remove_folder)
-		except Exception, e:
-			print e
+		# TODO: change according to the output
+		# remove_folder = ['rm', '-r', output_folder]
+		# try:
+		# 	subprocess.call(remove_folder)
+		# except Exception, e:
+		# 	print e
 		# Run (L-)LDA script
-		command = ['java', '-jar', tmt, script, fh.name, output_folder]
+		# TODO: change the command
+		jar_files = output_folder + '/mallet-2.0.7/' + 'dist/mallet-deps.jar:' + output_folder + '/mallet-2.0.7/' + 'dist/mallet.jar'
+		command = ['java', '-cp', jar_files, 'cc.mallet.topics.LLDA', fh.name, output_folder+'/mallet-2.0.7/label_index.txt']
 		print command
 		subprocess.call(command)
 	os.unlink(filename)
@@ -197,16 +207,14 @@ def llda_learn(tmt, script, output_folder, corpus, labels, semisupervised=False)
 def wrap_llda(docs_occurrence):
 	import os
 	BASE_DIR_UTIL = os.path.dirname(os.path.realpath(__file__))  #"/vagrant/julia/VerbalPhraseDetection/tweetstorm/features/utils"
-	model_path = BASE_DIR_UTIL + '/work/llda_model/'
+	model_path = BASE_DIR_UTIL # + '/work/llda_model/'
 	if not os.path.exists(model_path):
 		os.makedirs(model_path)
-	llda_learn_script = BASE_DIR_UTIL + '/6-llda-learn.scala'
-	tmt_file = BASE_DIR_UTIL + '/tmt-0.4.0.jar'
 	# Write data set (corpus, labels) of labeled documents to file
 	corpus = [(k, v['preprocessed']) for k, v in docs_occurrence.items() if v]
 	labels = [[ el[0]for el in v['occurrence_map']] for k, v in docs_occurrence.items() if v]
 	# Run Stanford TMT LLDA training and store results in model_path
-	llda_learn(tmt_file, llda_learn_script, model_path, corpus, labels, semisupervised=False)
+	llda_learn(model_path, corpus, labels, semisupervised=False)
 	return model_path
 
 def read_topic_vectors(model_path, general_concepts_map, labels_map, file_type=""):
