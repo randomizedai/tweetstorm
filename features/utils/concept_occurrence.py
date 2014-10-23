@@ -47,13 +47,13 @@ class ConceptOccurrence:
 	def process_text_with_occurrence(self, text, labels_map, general_concepts_map, multiplier=1, include_hash=1):
 		dict_to_check = dict([(l.encode('utf-8'), 1) for l in labels_map.keys()])
 		tag_list = get_terms_from_string(text, dict_to_check)
-		if len(tag_list) == 0:
-			return None
 		tag_tuple_list = [(l.value, l.start, l.end) for l in tag_list]
 		tag_tuple_list_syn = []
 		for el in tag_tuple_list:
 			tag_tuple_list_syn.append( (labels_map[el[0]][1], el[1], el[2]) )
 		self.update_text_with_underscores(tag_tuple_list, general_concepts_map)
+		if len(tag_list) == 0:
+			return None
 		for el in tag_tuple_list_syn:
 			if el[0] in self.occurrence_map:
 				self.occurrence_map[el[0]] += 1 * multiplier
