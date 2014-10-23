@@ -44,7 +44,7 @@ class ConceptOccurrence:
 	labels_map is a map with terms and their synonyms
 	labels_map = {norm_name: (norm, norm_name_of_main_concept)}
 	"""
-	def process_text_with_occurrence(self, text, labels_map, general_concepts_map, multiplier=1):
+	def process_text_with_occurrence(self, text, labels_map, general_concepts_map, multiplier=1, include_hash=1):
 		dict_to_check = dict([(l.encode('utf-8'), 1) for l in labels_map.keys()])
 		tag_list = get_terms_from_string(text, dict_to_check)
 		if len(tag_list) == 0:
@@ -59,8 +59,9 @@ class ConceptOccurrence:
 				self.occurrence_map[el[0]] += 1 * multiplier
 			else:
 				self.occurrence_map[el[0]] = 1 * multiplier
-			if el[1] > 0 and (text[el[1]-1] == "#" or text[el[1]-1] == "@"):
-				self.occurrence_map[el[0]] += 1
+			if include_hash:
+				if el[1] > 0 and (text[el[1]-1] == "#" or text[el[1]-1] == "@"):
+					self.occurrence_map[el[0]] += 1
 
 
 	"""
