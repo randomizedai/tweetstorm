@@ -28,6 +28,10 @@ class ConceptOccurrence:
 		dict_to_check = dict([(l.encode('utf-8'), 1) for l in general_concepts_map.keys()])
 		tag_list = get_terms_from_string(self.text, dict_to_check)
 		tag_tuple_list_general = [(l.value, l.start, l.end) for l in tag_list]
+		if title:
+			tag_list_title = get_terms_from_string(self.title, dict_to_check)
+			for l in tag_list_title:
+				tag_tuple_list_general.append((l.value, l.start, l.end))
 		self.preprocessed = [el[0] for el in tag_tuple_list_general]
 		for el in tag_tuple_list:
 			if el[0] not in self.preprocessed:
