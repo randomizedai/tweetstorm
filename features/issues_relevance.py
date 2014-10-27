@@ -100,7 +100,7 @@ elif file_type == 'news':
         print "-------------------"
         print ("\n".join([json.dumps({k:v}) for k, v in terms_index.items()]))
         print ">>>>>>>>>>>>>>>>>>>>>>>>>>>"
-    timestr = time.strftime("%Y%m%d/%H%M%S/")
+    timestr = time.strftime("%Y%m%d/%H/")
     d = BASE_DIR + '/work/' + str(timestr)
     if not os.path.exists(d):
         os.makedirs(d)
@@ -143,7 +143,7 @@ elif file_type == 'scientific':
         print "-------------------"
         print ("\n".join([json.dumps({k:v}) for k, v in terms_index.items()]))
         print ">>>>>>>>>>>>>>>>>>>>>>>>>>>"
-        timestr = time.strftime("%Y%m%d/%H%M%S/")
+        timestr = time.strftime("%Y%m%d/%H/")
     d = BASE_DIR + '/work/' + str(timestr)
     if not os.path.exists(d):
         os.makedirs(d)
