@@ -53,7 +53,7 @@ if file_type == 'tweet':
 		result.update(get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map))
 elif file_type == 'news':
     general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
-    articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&page_size=10", "http://146.148.70.53/documents/", num_pages )
+    articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&page_size=100", "http://146.148.70.53/documents/", num_pages )
     news = {}
     terms_index = {}
     counter = 0

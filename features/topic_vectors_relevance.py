@@ -5,16 +5,6 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(BASE_DIR + '/utils/')
 from concept_occurrence import *
 
-def read_from_multiple_files(directory):
-	import glob, json
-	tweets = {}
-	for filename in glob.glob(directory + "*.txt"):
-		for row in open(filename, 'r').readlines():
-			tweet = json.loads(row)
-			tweets[tweet['url']] = {'text' : tweet['content']}
-	return tweets
-
-
 argv = sys.argv[1:]
 try:
 	opts, args = getopt.getopt(argv, "hy:n:", ["type=", "num_pages="])
@@ -23,7 +13,7 @@ except getopt.GetoptError:
 	sys.exit(2)
 
 file_type = 'twitter'
-num_pages = None
+num_pages = []
 for opt, arg in opts:
 	if opt == '-h':
 		print 'topic_vectors_relevance.py -y <type of the file [twitter, news, paper]> -n <number of json pages to process for news/sci articles>'
@@ -31,23 +21,27 @@ for opt, arg in opts:
 	elif opt in ("-y", "--type"):
 		file_type = arg
 	elif opt in ("-n", "--num_pages"):
-		num_pages = arg
+		num_pages = [0, int(arg)]
 
 docs_occurrence = {}
 # labels_map and hierarchy is used for assigning preliminary topics to the docs
 # TODO: be able to read hierarchy in any order
 hierarchy = {} #json.loads(open(BASE_DIR + '/../../data/hierarchy_for_topics.json', 'r').read())
-labels_map = json.loads(open(BASE_DIR + '/../../data/top_concepts.json', 'r').read()) # concepts_with_synonyms.concepts_for_topics.json
+labels_map = read_topic_to_json(BASE_DIR + '/../../data/topics/')
+# labels_map = json.loads(open(BASE_DIR + '/../../data/top_concepts.json', 'r').read()) # concepts_with_synonyms.concepts_for_topics.json
 # Labels that are used to construct the docs -> terms vectors
 # general_concepts_map is additionally enriched with occurrence of the concepts from the labels_map
-general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/amitlist.csv') # 1_climate_keyphrases_aggr_filtered_844
+general_concepts_map = {} # load_csv_terms(BASE_DIR + '/../../data/amitlist.csv') # 1_climate_keyphrases_aggr_filtered_844
 
 if file_type == "twitter":
 	# tweets = tweets_to_map("http://146.148.70.53/tweets/list/", "http://146.148.70.53/tweets/", num_pages)
-	directory = BASE_DIR + "/../../data/julia_llda/"
-	tweets = read_from_multiple_files(directory)
+	# directory = BASE_DIR + "/../../data/julia_llda/"
+	# tweets = read_from_multiple_files(directory)
 
-	for k, v in tweets.items(): #open(BASE_DIR + "/../demo.json", 'r').readlines():
+	for row in sys.stdin:
+		v = json.loads(row)
+		k = v['id_str']
+		# for k, v in tweets.items(): #open(BASE_DIR + "/../demo.json", 'r').readlines():
 		occurrence = ConceptOccurrence(v['text'], file_type)
 		occurrence.get_occurrence_count(labels_map, hierarchy, general_concepts_map)
 		docs_occurrence[str(k)] = occurrence.struct_to_map()
@@ -66,8 +60,8 @@ if file_type == "twitter":
 	# print("\n\n")
 	# print("\n".join([json.dumps({k:v['topics']}) for k, v in document_topic_relevance.items()]))
 
-elif file_type == "web":
-	articles = articles_to_map("http://146.148.70.53/documents/list/", "http://146.148.70.53/documents/", [0,10])
+elif file_type == "news":
+	articles = articles_to_map("http://146.148.70.53/documents/list/?type=web", "http://146.148.70.53/documents/", num_pages)
 	for k, v in articles.items():
 		occurrence = ConceptOccurrence(v['body'], file_type)
 		occurrence.title = v['title']

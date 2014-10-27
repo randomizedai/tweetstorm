@@ -89,6 +89,30 @@ class ConceptOccurrence:
 						else:
 							self.occurrence_map[kv.keys()[0]] = self.occurrence_map[v]
 
+def read_topic_to_json(directory):
+	import glob, json
+	from os.path import basename
+	topics = {}
+	map_ = {}
+	for filename in glob.glob(directory+"*"):
+		topic_name = basename(filename).split("__")[1].replace("_"," ")
+		topics[topic_name] = []
+		for row in open(filename, 'r').readlines():
+			topics[topic_name].append(row.split(" ")[0])
+		map_[norm_literal(topic_name)] = [topic_name, norm_literal(topic_name)]
+		for v in topics[topic_name]:
+			map_[norm_literal(v)] = [v, norm_literal(topic_name)]
+	return map_
+
+
+def read_from_multiple_files(directory):
+	import glob, json
+	tweets = {}
+	for filename in glob.glob(directory + "*.txt"):
+		for row in open(filename, 'r').readlines():
+			tweet = json.loads(row)
+			tweets[tweet['url']] = {'text' : tweet['content']}
+	return tweets
 
 def articles_to_map(path_list, path, pages=((0,10))):
 	articles = {}
