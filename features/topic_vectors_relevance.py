@@ -21,13 +21,14 @@ for opt, arg in opts:
 	elif opt in ("-y", "--type"):
 		file_type = arg
 	elif opt in ("-n", "--num_pages"):
-		num_pages = [0, int(arg)]
+		num_pages = [int(el) for el in str(arg).split(',')]
 
 docs_occurrence = {}
 # labels_map and hierarchy is used for assigning preliminary topics to the docs
 # TODO: be able to read hierarchy in any order
 hierarchy = {} #json.loads(open(BASE_DIR + '/../../data/hierarchy_for_topics.json', 'r').read())
-labels_map = read_topic_to_json(BASE_DIR + '/../../data/topics/')
+labels_map, hierarchy, topics = read_topic_to_json_from_dir(BASE_DIR + '/../../data/topics/')
+# labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53/topics/list/')
 # labels_map = json.loads(open(BASE_DIR + '/../../data/top_concepts.json', 'r').read()) # concepts_with_synonyms.concepts_for_topics.json
 # Labels that are used to construct the docs -> terms vectors
 # general_concepts_map is additionally enriched with occurrence of the concepts from the labels_map
@@ -44,9 +45,7 @@ if file_type == "twitter":
 		# for k, v in tweets.items(): #open(BASE_DIR + "/../demo.json", 'r').readlines():
 		occurrence = ConceptOccurrence(v['text'], file_type)
 		occurrence.get_occurrence_count(labels_map, hierarchy, general_concepts_map)
-		docs_occurrence[str(k)] = occurrence.struct_to_map()
-
-	print("\n".join([json.dumps({k:v}) for k, v in docs_occurrence.items()]))
+		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics)
 
 	# model_path = wrap_llda(docs_occurrence)
 	# topic_vector_map = read_topic_vectors(model_path, general_concepts_map, labels_map, file_type)
@@ -66,9 +65,7 @@ elif file_type == "news":
 		occurrence = ConceptOccurrence(v['body'], file_type)
 		occurrence.title = v['title']
 		occurrence.get_occurrence_count(labels_map, hierarchy, general_concepts_map)
-		docs_occurrence[str(k)] = occurrence.struct_to_map()
-
-	print("\n".join([json.dumps({k:v}) for k, v in docs_occurrence.items()]))
+		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics)
 
 	# model_path = wrap_llda(docs_occurrence)
 	# topic_vector_map = read_topic_vectors(model_path, general_concepts_map, labels_map)
@@ -84,4 +81,22 @@ elif file_type == "news":
 elif file_type == "enb":
 	pass
 elif file_type == "scientific":
-	pass
+	articles = articles_to_map("http://146.148.70.53/documents/list/?type=scientific", "http://146.148.70.53/documents/", num_pages)
+	for k, v in articles.items():
+		occurrence = ConceptOccurrence(v['body'], file_type)
+		occurrence.title = v['title']
+		occurrence.get_occurrence_count(labels_map, hierarchy, general_concepts_map)
+		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics)
+
+for k, v in docs_occurrence.items():
+	if 'labels' in v:
+		scores = []
+		for pairs in v['labels']:
+			scores.append([ labels_map[pairs[0]][2], pairs[1] ])
+		if scores:
+			print json.dumps({k : scores})
+
+# print("\n".join([json.dumps( {k : [ [ labels_map[pairs[0]][2], pairs[1]] for pairs in v['occurrence_map'] if 'occurrence_map' in v ] } ) for k, v in docs_occurrence.items()]))
+# {"tweet_id": {"preprocessed": ["bla", "bla", ...], "occurrence_map": [ ["topic1",score], ["topc2", score], ...] }}
+
+

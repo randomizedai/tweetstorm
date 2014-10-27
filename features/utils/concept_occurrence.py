@@ -17,12 +17,36 @@ class ConceptOccurrence:
 		str_ = ';'.join(map(str, [(k, v) for k, v in self.occurrence_map.items()]))
 		return "%s\n%s\n%s" % (self.text.encode('utf-8'), self.preprocessed.encode('utf-8'), str_)
 
-	def struct_to_map(self):
+	def struct_to_map(self, hierarchy, topics):
 		res = {}
 		if self.occurrence_map:
 			res['preprocessed'] = self.preprocessed
 			res['occurrence_map'] = sorted([(k, v) for k,v in self.occurrence_map.items()], key=lambda x:x[1], reverse=True)
+			topics_scores = self.compute_hierarchy_scores_for_labels(hierarchy, topics)
+			if topics_scores:
+				res['labels'] = sorted([(k, v) for k,v in topics_scores.items()], key=lambda x:x[1], reverse=True)
+			else:
+				res['labels'] = []
 		return res
+
+	def compute_hierarchy_scores_for_labels(self, hierarchy, topics):
+		# TODO: Make a BFS to compute the hierarchy score
+		topics_scores = {}
+		topic_keys = [norm_literal(el) for el in topics.keys()]
+		for el in self.occurrence_map.keys():
+			n = hierarchy[el]
+			n.occurrence = self.occurrence_map[el]
+			n.accumulated = 0
+			topics_scores[el] = n
+		for k, v in self.occurrence_map.items():
+			curr_node = hierarchy[k]
+			curr_node.accumulated += curr_node.occurrence
+			curr_node.walkBfs(topic_keys)
+		res_ = {}
+		for k_res, v_res in topics_scores.items():
+			if k_res in topic_keys:
+				res_[k_res] = topics_scores[k_res].accumulated
+		return res_
 
 	def update_text_with_underscores(self, tag_tuple_list, general_concepts_map):
 		dict_to_check = dict([(l.encode('utf-8'), 1) for l in general_concepts_map.keys()])
@@ -77,33 +101,105 @@ class ConceptOccurrence:
 	def get_occurrence_count(self, labels_map, hierarchy, general_concepts_map):
 		self.process_text_with_occurrence(self.text, labels_map, general_concepts_map, multiplier = 1)
 		if self.title:
-			self.process_text_with_occurrence(self.title, labels_map, general_concepts_map, multiplier = 2)
+			self.process_text_with_occurrence(self.title, labels_map, general_concepts_map, multiplier = 2, include_hash = 0)
 		if self.abstract:
-			self.process_text_with_occurrence(self.abstract, labels_map, general_concepts_map, multiplier = 1)
-		if self.occurrence_map is not None:
-			for kv in hierarchy:
-				for v in kv.values()[0]:
-					if v in self.occurrence_map.keys():
-						if kv.keys()[0] in self.occurrence_map.keys():
-							self.occurrence_map[kv.keys()[0]] += self.occurrence_map[v]
-						else:
-							self.occurrence_map[kv.keys()[0]] = self.occurrence_map[v]
+			self.process_text_with_occurrence(self.abstract, labels_map, general_concepts_map, multiplier = 1, include_hash = 0)
+		# if self.occurrence_map is not None:
+		# 	for kv in hierarchy:
+		# 		for v in kv.values()[0]:
+		# 			if v in self.occurrence_map.keys():
+		# 				if kv.keys()[0] in self.occurrence_map.keys():
+		# 					self.occurrence_map[kv.keys()[0]] += self.occurrence_map[v]
+		# 				else:
+		# 					self.occurrence_map[kv.keys()[0]] = self.occurrence_map[v]
 
-def read_topic_to_json(directory):
+class Node:
+	def __init__(self, name):
+		self.name = name
+		self.norm_name = norm_literal(name)
+		self.children = []
+		self.parents = []
+		self.occurrence = 0
+		self.accumulated = 0
+
+	def walkBfs(self, topic_names):
+		queue = [self]
+		while queue:
+			current = queue.pop(0)
+			for parent in current.parents:
+				if parent.norm_name != current.norm_name:
+					if current.norm_name not in topic_names:
+						parent.accumulated += current.occurrence
+					else:
+						parent.accumulated += current.accumulated
+					queue.append(parent)
+
+
+def read_topic_to_json_from_dir(directory):
 	import glob, json
 	from os.path import basename
 	topics = {}
 	map_ = {}
+	counter = 0
+	# hierarchy -> {name: Node(name)}
+	hierarchy = {}
 	for filename in glob.glob(directory+"*"):
 		topic_name = basename(filename).split("__")[1].replace("_"," ")
 		topics[topic_name] = []
 		for row in open(filename, 'r').readlines():
-			topics[topic_name].append(row.split(" ")[0])
-		map_[norm_literal(topic_name)] = [topic_name, norm_literal(topic_name)]
+			topics[topic_name].append( [row.split(" ")[0], row.split(" ")[1]] )
+		map_[norm_literal(topic_name)] = [topic_name, norm_literal(topic_name), counter]
+		if norm_literal(topic_name) not in hierarchy.keys():
+			n = Node(topic_name)
+			hierarchy[n.norm_name] = n
+		else:
+			n = hierarchy[norm_literal(topic_name)]
+		counter += 1
 		for v in topics[topic_name]:
-			map_[norm_literal(v)] = [v, norm_literal(topic_name)]
-	return map_
+			if norm_literal(v[0]) in hierarchy.keys():
+				n.children.append(hierarchy[norm_literal(v[0])])
+				map_[norm_literal(v[0])] = [v[0], norm_literal(v[0]), counter]
+			else:
+				if v[0] != n.name:
+					child = Node(v[0])
+					child.parents.append(n)
+					hierarchy[child.norm_name] = child
+					n.children.append(child)
+					map_[norm_literal(v[0])] = [v[0], norm_literal(v[0]), counter]
+	return map_, hierarchy, topics
 
+def read_topic_to_json_from_db(path):
+	topics = {}
+	map_ = {}
+	counter = 0
+	hierarchy = {}
+	next = path
+	while next:
+		page = json.load(urllib2.urlopen(next))
+		# for each topic
+		for p in page['results']:
+			topic_name = p['name']
+			topics[topic_name] = []
+			for con in p['concepts']:
+				topics[topic_name].append( [ con['name'], con['weight'] ] )
+			map_[norm_literal(topic_name)] = [topic_name, norm_literal(topic_name), p['id']]
+			if norm_literal(topic_name) not in hierarchy.keys():
+				n = Node(topic_name)
+				hierarchy[n.norm_name] = n
+			else:
+				n = hierarchy[norm_literal(topic_name)]
+			for v in topics[topic_name]:
+				if norm_literal(v[0]) in hierarchy.keys():
+					n.children.append(hierarchy[norm_literal(v[0])])
+					map_[norm_literal(v[0])] = [v[0], norm_literal(v[0]), counter]
+				else:
+					if v[0] != n.name:
+						child = Node(v[0])
+						child.parents.append(n)
+						hierarchy[child.norm_name] = child
+						n.children.append(child)
+						map_[norm_literal(v[0])] = [v[0], norm_literal(v[0]), counter]
+		next = page['next']
 
 def read_from_multiple_files(directory):
 	import glob, json
@@ -127,9 +223,9 @@ def articles_to_map(path_list, path, pages=((0,10))):
 				if counter >= pages[0]:
 					doc_text = json.load( urllib2.urlopen( path + str(p['id']) ) )['plain_text']
 					articles[p['id']] = {'title': p['title'], 'body' : doc_text}
-				counter += 1
 		except Exception, e:
 			return articles
+		counter += 1
 		next = page['next']
 	return articles
 
