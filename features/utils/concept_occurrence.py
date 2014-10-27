@@ -28,7 +28,7 @@ class ConceptOccurrence:
 		dict_to_check = dict([(l.encode('utf-8'), 1) for l in general_concepts_map.keys()])
 		tag_list = get_terms_from_string(self.text, dict_to_check)
 		tag_tuple_list_general = [(l.value, l.start, l.end) for l in tag_list]
-		if title:
+		if self.title:
 			tag_list_title = get_terms_from_string(self.title, dict_to_check)
 			for l in tag_list_title:
 				tag_tuple_list_general.append((l.value, l.start, l.end))
@@ -90,17 +90,18 @@ class ConceptOccurrence:
 							self.occurrence_map[kv.keys()[0]] = self.occurrence_map[v]
 
 
-def articles_to_map(path_list, path, pages=None):
+def articles_to_map(path_list, path, pages=[]):
 	articles = {}
 	next = path_list
 	counter = 0
-	if pages is None:
-		pages = json.load(urllib2.urlopen(next))["count"]
-	while next and counter < pages:
+	if not pages:
+		pages = [0, json.load(urllib2.urlopen(next))["count"]]
+	while next and counter < pages[1]:
 		page = json.load(urllib2.urlopen(next))
 		for p in page['results']:
-			doc_text = json.load( urllib2.urlopen( path + str(p['id']) ) )['plain_text']
-			articles[p['id']] = {'title': p['title'], 'body' : doc_text}
+			if counter >= pages[0]:
+				doc_text = json.load( urllib2.urlopen( path + str(p['id']) ) )['plain_text']
+				articles[p['id']] = {'title': p['title'], 'body' : doc_text}
 			counter += 1
 		next = page['next']
 	return articles
