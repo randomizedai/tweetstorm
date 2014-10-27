@@ -48,9 +48,15 @@ if file_type == 'tweet':
 	# text should be in format of json to load tweet
 	if text == None:
 		for row in sys.stdin:
-			result.update(get_indicator_body_title_abstact(file_path, file_type, row, title, abstract, verbal_map))
+            indicator = get_indicator_body_title_abstact(file_path, file_type, row, title, abstract, verbal_map)
+            if indicator is None:
+                continue
+			result.update(indicator)
 	else:
-		result.update(get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map))
+        indicator = get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map)
+        if indicator is None:
+            continue
+		result.update()
 elif file_type == 'news':
     general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
     articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&page_size=100", "http://146.148.70.53/documents/", num_pages )
@@ -63,6 +69,8 @@ elif file_type == 'news':
         doc_id = str(k)
         # if given a json with metadata then use id as file_path
         indicator = get_indicator_body_title_abstact(doc_id, file_type, text, title, abstract, verbal_map)
+        if indicator is None:
+            continue
         result.update(indicator)
         if issue_term_representation:
             for issue_scores in indicator[doc_id]:
@@ -86,7 +94,42 @@ elif file_type == 'news':
         print ("\n".join([json.dumps({k:v}) for k, v in news.items()]))
         print "-------------------"
         print ("\n".join([json.dumps({k:v}) for k, v in terms_index.items()]))
-elif file_type == 'paper':
-    pass
+elif file_type == 'scientific':
+    general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
+    articles = articles_to_map("http://146.148.70.53/documents/list/?type=scientific&page_size=100", "http://146.148.70.53/documents/", num_pages )
+    arts = {}
+    terms_index = {}
+    counter = 0
+    for k, v in articles.items():
+        text = v['body']
+        title = v['title']
+        doc_id = str(k)
+        # if given a json with metadata then use id as file_path
+        indicator = get_indicator_body_title_abstact(doc_id, file_type, text, title, abstract, verbal_map)
+        if indicator is None:
+            continue
+        result.update(indicator)
+        if issue_term_representation:
+            for issue_scores in indicator[doc_id]:
+                if issue_scores[1] > 0:
+                    occurrence = ConceptOccurrence(text.lower(), 'scientific')
+                    occurrence.title = title
+                    occurrence.get_occurrence_count({}, {}, general_concepts_map)
+                    terms = {}
+                    if len(occurrence.preprocessed) > 1:
+                        arts[doc_id] = {'issue': issue_scores[0]}
+                        for el in occurrence.preprocessed:
+                            if el in terms:
+                                terms[el] += 1
+                            else:
+                                terms[el] = 1
+                            if el not in terms_index:
+                                terms_index[el] = counter
+                                counter += 1
+                        arts[doc_id]['concepts'] = sorted([(terms_index[k], v) for k,v in terms.items()], key=lambda x:x[1], reverse=True)
+    if issue_term_representation:
+        print ("\n".join([json.dumps({k:v}) for k, v in arts.items()]))
+        print "-------------------"
+        print ("\n".join([json.dumps({k:v}) for k, v in terms_index.items()]))
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>"
 print ("\n".join([json.dumps({k:v}) for k, v in result.items()]))

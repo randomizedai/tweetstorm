@@ -163,8 +163,10 @@ def compute_indicators_inner(file_type, text, title, abstract, id_element, verba
         index = weight['index_body'] * index_body \
               + weight['index_title'] * index_title \
               + weight['index_abstract'] * index_abstract
-        res_[id_element].append([key, index])
-    return res_
+        if index > 0:
+            res_[id_element].append([key, index])
+    if res_[id_element]:
+        return res_
 
 # Output: issue_id : [obj_norm_name; subj_norm_name; predicate_name; obj; subj]
 def issues_to_map(path):
