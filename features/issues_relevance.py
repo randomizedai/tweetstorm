@@ -49,7 +49,7 @@ if file_type == 'tweet':
 	else:
 		result.update(get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map))
 elif file_type == 'news':
-    articles = articles_to_map("http://146.148.70.53/documents/list/?type=web", "http://146.148.70.53/documents/", num_pages)
+    articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&page_size=100", "http://146.148.70.53/documents/", [0, num_pages])
     for k, v in articles.items():
         text = v['body']
         title = v['title']

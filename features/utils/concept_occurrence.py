@@ -97,12 +97,15 @@ def articles_to_map(path_list, path, pages=[]):
 	if not pages:
 		pages = [0, json.load(urllib2.urlopen(next))["count"]]
 	while next and counter < pages[1]:
-		page = json.load(urllib2.urlopen(next))
-		for p in page['results']:
-			if counter >= pages[0]:
-				doc_text = json.load( urllib2.urlopen( path + str(p['id']) ) )['plain_text']
-				articles[p['id']] = {'title': p['title'], 'body' : doc_text}
-			counter += 1
+		try:
+			page = json.load(urllib2.urlopen(next))
+			for p in page['results']:
+				if counter >= pages[0]:
+					doc_text = json.load( urllib2.urlopen( path + str(p['id']) ) )['plain_text']
+					articles[p['id']] = {'title': p['title'], 'body' : doc_text}
+				counter += 1
+		except Exception, e:
+			return articles
 		next = page['next']
 	return articles
 
