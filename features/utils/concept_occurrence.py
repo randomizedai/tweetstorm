@@ -90,7 +90,7 @@ class ConceptOccurrence:
 							self.occurrence_map[kv.keys()[0]] = self.occurrence_map[v]
 
 
-def articles_to_map(path_list, path, pages=[]):
+def articles_to_map(path_list, path, pages=((0,10))):
 	articles = {}
 	next = path_list
 	counter = 0

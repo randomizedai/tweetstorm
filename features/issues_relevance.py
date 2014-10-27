@@ -32,7 +32,7 @@ for opt, arg in opts:
     elif opt in ("-i", "--title"):
         title = arg
     elif opt in ("-n", "--num_pages"):
-        num_pages = arg
+        num_pages = [0, int(arg)]
     elif opt in ("-a", "--abstract"):
         abstract = arg
     elif opt in ("-e", "--text"):
@@ -53,7 +53,7 @@ if file_type == 'tweet':
 		result.update(get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map))
 elif file_type == 'news':
     general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
-    articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&page_size=100", "http://146.148.70.53/documents/", [0, num_pages])
+    articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&page_size=10", "http://146.148.70.53/documents/", num_pages )
     news = {}
     terms_index = {}
     counter = 0
@@ -62,7 +62,8 @@ elif file_type == 'news':
         title = v['title']
         doc_id = str(k)
         # if given a json with metadata then use id as file_path
-        result.update(get_indicator_body_title_abstact(doc_id, file_type, text, title, abstract, verbal_map))
+        indicator = get_indicator_body_title_abstact(doc_id, file_type, text, title, abstract, verbal_map)
+        result.update(indicator)
         if issue_term_representation:
             for issue_scores in indicator[doc_id]:
                 if issue_scores[1] > 0:
@@ -83,6 +84,8 @@ elif file_type == 'news':
                         news[doc_id]['concepts'] = sorted([(terms_index[k], v) for k,v in terms.items()], key=lambda x:x[1], reverse=True)
     if issue_term_representation:
         print ("\n".join([json.dumps({k:v}) for k, v in news.items()]))
+        print "-------------------"
+        print ("\n".join([json.dumps({k:v}) for k, v in terms_index.items()]))
 elif file_type == 'paper':
     pass
 print ">>>>>>>>>>>>>>>>>>>>>>>>>>>"
