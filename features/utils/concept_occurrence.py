@@ -94,7 +94,7 @@ def articles_to_map(path_list, path, pages=[]):
 	articles = {}
 	next = path_list
 	counter = 0
-	if not pages:
+	if len(pages) == 0:
 		pages = [0, json.load(urllib2.urlopen(next))["count"]]
 	while next and counter < pages[1]:
 		try:

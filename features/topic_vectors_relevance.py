@@ -36,15 +36,13 @@ for opt, arg in opts:
 docs_occurrence = {}
 # labels_map and hierarchy is used for assigning preliminary topics to the docs
 # TODO: be able to read hierarchy in any order
-hierarchy = {} #
-# hierarchy = json.loads(open(BASE_DIR + '/../../data/hierarchy_for_topics.json', 'r').read())
+hierarchy = {} #json.loads(open(BASE_DIR + '/../../data/hierarchy_for_topics.json', 'r').read())
 labels_map = json.loads(open(BASE_DIR + '/../../data/top_concepts.json', 'r').read()) # concepts_with_synonyms.concepts_for_topics.json
 # Labels that are used to construct the docs -> terms vectors
 # general_concepts_map is additionally enriched with occurrence of the concepts from the labels_map
 general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/amitlist.csv') # 1_climate_keyphrases_aggr_filtered_844
 
 if file_type == "twitter":
-	# un #
 	# tweets = tweets_to_map("http://146.148.70.53/tweets/list/", "http://146.148.70.53/tweets/", num_pages)
 	directory = BASE_DIR + "/../../data/julia_llda/"
 	tweets = read_from_multiple_files(directory)
@@ -54,7 +52,9 @@ if file_type == "twitter":
 		occurrence.get_occurrence_count(labels_map, hierarchy, general_concepts_map)
 		docs_occurrence[str(k)] = occurrence.struct_to_map()
 
-	model_path = wrap_llda(docs_occurrence)
+	print("\n".join([json.dumps({k:v}) for k, v in docs_occurrence.items()]))
+
+	# model_path = wrap_llda(docs_occurrence)
 	# topic_vector_map = read_topic_vectors(model_path, general_concepts_map, labels_map, file_type)
 	# # tweets
 	# document_topic_relevance = rank_element_to_topics(model_path, labels_map, docs_occurrence, tweets)
@@ -76,16 +76,16 @@ elif file_type == "web":
 
 	print("\n".join([json.dumps({k:v}) for k, v in docs_occurrence.items()]))
 
-	model_path = wrap_llda(docs_occurrence)
-	topic_vector_map = read_topic_vectors(model_path, general_concepts_map, labels_map)
-	try:
-		document_topic_relevance = rank_element_to_topics(model_path, labels_map, docs_occurrence, {})
-	except Exception, e:
-		print e
+	# model_path = wrap_llda(docs_occurrence)
+	# topic_vector_map = read_topic_vectors(model_path, general_concepts_map, labels_map)
+	# try:
+	# 	document_topic_relevance = rank_element_to_topics(model_path, labels_map, docs_occurrence, {})
+	# except Exception, e:
+	# 	print e
 
-	print("\n".join([json.dumps({k:v}) for k, v in topic_vector_map.items()]))
-	print("\n\n")
-	print("\n".join([json.dumps({k:v['topics']}) for k, v in document_topic_relevance.items()]))
+	# print("\n".join([json.dumps({k:v}) for k, v in topic_vector_map.items()]))
+	# print("\n\n")
+	# print("\n".join([json.dumps({k:v['topics']}) for k, v in document_topic_relevance.items()]))
 
 elif file_type == "enb":
 	pass
