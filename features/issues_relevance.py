@@ -100,8 +100,8 @@ elif file_type == 'news':
         print "-------------------"
         print ("\n".join([json.dumps({k:v}) for k, v in terms_index.items()]))
         print ">>>>>>>>>>>>>>>>>>>>>>>>>>>"
-    timestr = time.strftime("%Y%m%d-%H%M%S")
-    open(BASE_DIR + '/work/' + file_type + '_' + timestr + '.json', 'w').write("\n".join([json.dumps({k:v}) for k, v in result.items()]))
+    timestr = time.strftime("%Y%m%d/%H%M%S/")
+    open(BASE_DIR + '/work/' + file_type + '_' + timestr + "_".join(num_pages) + '.json', 'w').write("\n".join([json.dumps({k:v}) for k, v in result.items()]))
 elif file_type == 'scientific':
     general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
     articles = articles_to_map("http://146.148.70.53/documents/list/?type=scientific&page_size=" + page_size, "http://146.148.70.53/documents/", num_pages )
@@ -140,5 +140,5 @@ elif file_type == 'scientific':
         print "-------------------"
         print ("\n".join([json.dumps({k:v}) for k, v in terms_index.items()]))
         print ">>>>>>>>>>>>>>>>>>>>>>>>>>>"
-    timestr = time.strftime("%Y%m%d-%H%M%S")
-    open(BASE_DIR + '/work/' + file_type + '_' + timestr + '.json', 'w').write("\n".join([json.dumps({k:v}) for k, v in result.items()]))
+    timestr = time.strftime("%Y%m%d/%H%M%S/")
+    open(BASE_DIR + '/work/' + file_type + '_' + timestr + "_".join(num_pages) + '.json', 'w').write("\n".join([json.dumps({k:v}) for k, v in result.items()]))
