@@ -44,19 +44,19 @@ for opt, arg in opts:
 
 verbal_map = read_verbal_ontology(BASE_DIR + "/../../data/")
 result = {}
+triplets = issues_to_map(issues)
 if file_type == 'tweet':
-	# text should be in format of json to load tweet
-	if text == None:
-		for row in sys.stdin:
-            indicator = get_indicator_body_title_abstact(file_path, file_type, row, title, abstract, verbal_map)
+    # text should be in format of json to load tweet
+    if text == None:
+        for row in sys.stdin:
+            indicator = get_indicator_body_title_abstact(file_path, file_type, row, title, abstract, verbal_map, triplets)
             if indicator is None:
                 continue
-			result.update(indicator)
-	else:
-        indicator = get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map)
-        if indicator is None:
-            continue
-		result.update()
+            result.update(indicator)
+    else:
+        indicator = get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map, triplets)
+        if indicator is not None:
+            result.update()
 elif file_type == 'news':
     general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
     articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&page_size=100", "http://146.148.70.53/documents/", num_pages )
@@ -68,7 +68,7 @@ elif file_type == 'news':
         title = v['title']
         doc_id = str(k)
         # if given a json with metadata then use id as file_path
-        indicator = get_indicator_body_title_abstact(doc_id, file_type, text, title, abstract, verbal_map)
+        indicator = get_indicator_body_title_abstact(doc_id, file_type, text, title, abstract, verbal_map, triplets)
         if indicator is None:
             continue
         result.update(indicator)
@@ -105,7 +105,7 @@ elif file_type == 'scientific':
         title = v['title']
         doc_id = str(k)
         # if given a json with metadata then use id as file_path
-        indicator = get_indicator_body_title_abstact(doc_id, file_type, text, title, abstract, verbal_map)
+        indicator = get_indicator_body_title_abstact(doc_id, file_type, text, title, abstract, verbal_map, triplets)
         if indicator is None:
             continue
         result.update(indicator)
@@ -131,5 +131,5 @@ elif file_type == 'scientific':
         print ("\n".join([json.dumps({k:v}) for k, v in arts.items()]))
         print "-------------------"
         print ("\n".join([json.dumps({k:v}) for k, v in terms_index.items()]))
-print ">>>>>>>>>>>>>>>>>>>>>>>>>>>"
+        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>"
 print ("\n".join([json.dumps({k:v}) for k, v in result.items()]))

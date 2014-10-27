@@ -184,7 +184,7 @@ def issues_to_map(path):
     return triplets
 
         
-def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map):
+def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map, triplets):
     import json
     res_ = {}
     tweet_id_text = {}
@@ -199,7 +199,6 @@ def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract
             text = codecs.open(file_path, 'r', 'utf-8').read()
         id_element = file_path
 
-    triplets = issues_to_map(issues)
     # TODO: Check the formal of title and abstract and pass them as text to the function
     res_ = compute_indicators_inner( 
         file_type=file_type, 
