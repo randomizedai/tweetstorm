@@ -5,10 +5,11 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(BASE_DIR + '/utils/')
 from article_to_issue import *
 from concept_occurrence import *
+import time
 
 argv = sys.argv[1:]
 try:
-    opts, args = getopt.getopt(argv, "hf:y:e:i:a:v:n:r", ["file=", "num_pages=", "text=", "type=", "title=", "abstract=", "verbalmappath="])
+    opts, args = getopt.getopt(argv, "hf:y:e:i:a:p:v:n:r", ["file=", "num_pages=", "text=", "type=", "title=", "page_size=", "abstract=", "verbalmappath="])
 except getopt.GetoptError:
     print 'article_to_issue.py -f <article/file path> -y <type of the file> -i <title if any> -a <abstract if any>'
     sys.exit(2)
@@ -21,6 +22,7 @@ file_path = None
 verbal_path = ""
 num_pages = []
 issue_term_representation = 0
+page_size = 10
 for opt, arg in opts:
     if opt == '-h':
         print 'article_to_issue.p -f <article/file path> -y <type of the file> -i <title if any> -a <abstract if any> -v <verbal path unless in current directory> [-r (for term representation)]'
@@ -32,7 +34,9 @@ for opt, arg in opts:
     elif opt in ("-i", "--title"):
         title = arg
     elif opt in ("-n", "--num_pages"):
-        num_pages = [0, int(arg)]
+        num_pages = [int(el) for el in str(arg).split(',')]
+    elif opt in ("-p", "--page_size"):
+        page_size = str(arg)
     elif opt in ("-a", "--abstract"):
         abstract = arg
     elif opt in ("-e", "--text"):
@@ -57,12 +61,13 @@ if file_type == 'tweet':
         indicator = get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map, triplets)
         if indicator is not None:
             result.update()
+    print ("\n".join([json.dumps({k:v}) for k, v in result.items()]))
 elif file_type == 'news':
     general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
-    articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&page_size=100", "http://146.148.70.53/documents/", num_pages )
-    news = {}
     terms_index = {}
     counter = 0
+    articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&page_size="+page_size, "http://146.148.70.53/documents/", num_pages )
+    news = {}
     for k, v in articles.items():
         text = v['body']
         title = v['title']
@@ -94,9 +99,12 @@ elif file_type == 'news':
         print ("\n".join([json.dumps({k:v}) for k, v in news.items()]))
         print "-------------------"
         print ("\n".join([json.dumps({k:v}) for k, v in terms_index.items()]))
+        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    open(BASE_DIR + '/work/' + file_type + '_' + timestr + '.json', 'w').write("\n".join([json.dumps({k:v}) for k, v in result.items()]))
 elif file_type == 'scientific':
     general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
-    articles = articles_to_map("http://146.148.70.53/documents/list/?type=scientific&page_size=100", "http://146.148.70.53/documents/", num_pages )
+    articles = articles_to_map("http://146.148.70.53/documents/list/?type=scientific&page_size=" + page_size, "http://146.148.70.53/documents/", num_pages )
     arts = {}
     terms_index = {}
     counter = 0
@@ -132,4 +140,5 @@ elif file_type == 'scientific':
         print "-------------------"
         print ("\n".join([json.dumps({k:v}) for k, v in terms_index.items()]))
         print ">>>>>>>>>>>>>>>>>>>>>>>>>>>"
-print ("\n".join([json.dumps({k:v}) for k, v in result.items()]))
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    open(BASE_DIR + '/work/' + file_type + '_' + timestr + '.json', 'w').write("\n".join([json.dumps({k:v}) for k, v in result.items()]))
