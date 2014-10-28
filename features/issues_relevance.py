@@ -22,7 +22,7 @@ file_path = None
 verbal_path = ""
 num_pages = []
 issue_term_representation = 0
-page_size = 10
+page_size = str(10)
 for opt, arg in opts:
     if opt == '-h':
         print 'article_to_issue.p -f <article/file path> -y <type of the file> -i <title if any> -a <abstract if any> -v <verbal path unless in current directory> [-r (for term representation)]'
@@ -66,7 +66,7 @@ elif file_type == 'news':
     general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
     terms_index = {}
     counter = 0
-    articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&page_size="+page_size, "http://146.148.70.53/documents/", num_pages )
+    articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&full_text=1&page_size="+page_size, "http://146.148.70.53/documents/", num_pages )
     news = {}
     for k, v in articles.items():
         text = v['body']
@@ -107,7 +107,7 @@ elif file_type == 'news':
     open(d + file_type + "_" + "_".join([str(num_pages[0]), str(num_pages[1])]) + '.json', 'w').write("\n".join([json.dumps({k:v}) for k, v in result.items()]))
 elif file_type == 'scientific':
     general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
-    articles = articles_to_map("http://146.148.70.53/documents/list/?type=scientific&page_size=" + page_size, "http://146.148.70.53/documents/", num_pages )
+    articles = articles_to_map("http://146.148.70.53/documents/list/?type=scientific&full_text=1&page_size=" + page_size, "http://146.148.70.53/documents/", num_pages )
     arts = {}
     terms_index = {}
     counter = 0
