@@ -4,6 +4,7 @@ import os, sys, json, getopt, codecs
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(BASE_DIR + '/utils/')
 from concept_occurrence import *
+import time
 
 argv = sys.argv[1:]
 try:
@@ -47,6 +48,14 @@ if file_type == "twitter":
 		occurrence.get_occurrence_count(labels_map, hierarchy, general_concepts_map)
 		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics)
 
+	for k, v in docs_occurrence.items():
+		if 'labels' in v:
+			scores = []
+			for pairs in v['labels']:
+				scores.append([ labels_map[pairs[0]][2], pairs[1] ])
+			if scores:
+				print json.dumps({k : scores})
+
 	# model_path = wrap_llda(docs_occurrence)
 	# topic_vector_map = read_topic_vectors(model_path, general_concepts_map, labels_map, file_type)
 	# # tweets
@@ -88,13 +97,22 @@ elif file_type == "scientific":
 		occurrence.get_occurrence_count(labels_map, hierarchy, general_concepts_map)
 		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics)
 
-for k, v in docs_occurrence.items():
-	if 'labels' in v:
-		scores = []
-		for pairs in v['labels']:
-			scores.append([ labels_map[pairs[0]][2], pairs[1] ])
-		if scores:
-			print json.dumps({k : scores})
+if file_type != 'twitter':
+	timestr = time.strftime("%Y%m%d/%H/")
+	d = BASE_DIR + '/work/topics/' + str(timestr)
+	if not os.path.exists(d):
+		os.makedirs(d)
+
+	sc = []
+	for k, v in docs_occurrence.items():
+		if 'labels' in v:
+			scores = []
+			for pairs in v['labels']:
+				scores.append([ labels_map[pairs[0]][2], pairs[1] ])
+			if scores:
+				sc.append(json.dumps({k : scores}))
+
+	open(d + file_type + "_" + "_".join([str(num_pages[0]), str(num_pages[1])]) + '.json', 'w').write("\n".join([el for el in sc]))
 
 # print("\n".join([json.dumps( {k : [ [ labels_map[pairs[0]][2], pairs[1]] for pairs in v['occurrence_map'] if 'occurrence_map' in v ] } ) for k, v in docs_occurrence.items()]))
 # {"tweet_id": {"preprocessed": ["bla", "bla", ...], "occurrence_map": [ ["topic1",score], ["topc2", score], ...] }}
