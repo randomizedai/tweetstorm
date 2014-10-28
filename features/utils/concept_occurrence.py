@@ -29,23 +29,44 @@ class ConceptOccurrence:
 				res['labels'] = []
 		return res
 
+	def walkBfs(self, curr_node, topics, hierarchy):
+		# TODO: use hierarchy to access the nodes
+		queue = [curr_node]
+		while queue:
+			current = queue.pop(0)
+			for parent in current.parents:
+				if parent.norm_name != current.norm_name:
+					if current.norm_name not in topics.keys():
+						parent = hierarchy[parent.norm_name]
+						parent.accumulated += 1 * current.occurrence
+						parent.weighted += parent.accumulated * topics[parent.norm_name][current.norm_name][0]
+					else:
+						parent = hierarchy[parent.norm_name]
+						parent.accumulated += 1 * current.accumulated
+						parent.weighted += parent.accumulated * topics[parent.norm_name][current.norm_name][0]
+					queue.append(parent)
+
 	def compute_hierarchy_scores_for_labels(self, hierarchy, topics):
 		# TODO: Make a BFS to compute the hierarchy score
-		topics_scores = {}
-		topic_keys = [norm_literal(el) for el in topics.keys()]
+		import copy
+		hir = copy.deepcopy(hierarchy)
 		for el in self.occurrence_map.keys():
-			n = hierarchy[el]
+			n = hir[el]
 			n.occurrence = self.occurrence_map[el]
-			n.accumulated = 0
-			topics_scores[el] = n
+			n.accumulated = n.occurrence
+			if n.norm_name in topics.keys():
+				n.weighted += n.occurrence
 		for k, v in self.occurrence_map.items():
-			curr_node = hierarchy[k]
-			curr_node.accumulated += curr_node.occurrence
-			curr_node.walkBfs(topic_keys, topics)
+			curr_node = hir[k]
+			for parent in curr_node.parents:
+				parent = hir[parent.norm_name]
+				parent.accumulated += curr_node.occurrence
+				parent.weighted += curr_node.occurrence * topics[parent.norm_name][curr_node.norm_name][0]
+			# self.walkBfs(curr_node, topics, hir)
 		res_ = {}
-		for k_res, v_res in topics_scores.items():
-			if k_res in topic_keys:
-				res_[k_res] = topics_scores[k_res].weighted
+		for k_res, v_res in hir.items():
+			if k_res in topics.keys() and v_res.weighted > 0:
+				res_[k_res] = v_res.weighted
 		return res_
 
 	def update_text_with_underscores(self, tag_tuple_list, general_concepts_map):
@@ -123,20 +144,6 @@ class Node:
 		self.accumulated = 0
 		self.weighted = 0.0
 
-	def walkBfs(self, topic_names, topics):
-		queue = [self]
-		while queue:
-			current = queue.pop(0)
-			for parent in current.parents:
-				if parent.norm_name != current.norm_name:
-					if current.norm_name not in topic_names:
-						parent.accumulated += 1 * current.occurrence
-						parent.weighted += current.occurrence * topics[parent.norm_name][current.norm_name][0]
-					else:
-						parent.accumulated += 1 * current.accumulated
-						parent.weighted += current.accumulated * topics[parent.norm_name][current.norm_name][0]
-					queue.append(parent)
-
 
 def read_topic_to_json_from_dir(directory):
 	import glob, json
@@ -150,14 +157,18 @@ def read_topic_to_json_from_dir(directory):
 		topic_name = basename(filename).split("__")[1].replace("_"," ")
 		topic_norm_name = norm_literal(topic_name)
 		topics[topic_norm_name] = {}
-		for row in open(filename, 'r').readlines():
+		for i, row in enumerate(open(filename, 'r').readlines()):
+			if i == 0:
+				divide_by = float( row.split(" ")[1].strip() )
+				if divide_by <= 1:
+					divide_by = 1
 			child_name = row.split(" ")[0].replace("_"," ")
-			topics[topic_norm_name][norm_literal(child_name)] = [float(row.split(" ")[1].strip() ), child_name]
+			topics[topic_norm_name][norm_literal(child_name)] = [float(row.split(" ")[1].strip() ) / divide_by, child_name]
 		map_[topic_norm_name] = [topic_name, topic_norm_name, counter]
 		if topic_norm_name not in hierarchy.keys():
 			n = Node(topic_name)
-			n.norm_name = norm_literal(topic_name)
-			hierarchy[n.norm_name] = n
+			n.norm_name = topic_norm_name
+			hierarchy[topic_norm_name] = n
 		else:
 			n = hierarchy[norm_literal(topic_name)]
 		counter += 1
