@@ -69,7 +69,7 @@ if file_type == "twitter":
 	# print("\n".join([json.dumps({k:v['topics']}) for k, v in document_topic_relevance.items()]))
 
 elif file_type == "news":
-	articles = articles_to_map("http://146.148.70.53/documents/list/?type=web", "http://146.148.70.53/documents/", num_pages)
+	articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&page_size=100", "http://146.148.70.53/documents/", num_pages)
 	for k, v in articles.items():
 		occurrence = ConceptOccurrence(v['body'], file_type)
 		occurrence.title = v['title']
@@ -90,7 +90,7 @@ elif file_type == "news":
 elif file_type == "enb":
 	pass
 elif file_type == "scientific":
-	articles = articles_to_map("http://146.148.70.53/documents/list/?type=scientific", "http://146.148.70.53/documents/", num_pages)
+	articles = articles_to_map("http://146.148.70.53/documents/list/?type=scientific&page_size=100", "http://146.148.70.53/documents/", num_pages)
 	for k, v in articles.items():
 		occurrence = ConceptOccurrence(v['body'], file_type)
 		occurrence.title = v['title']
