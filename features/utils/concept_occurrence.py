@@ -41,7 +41,7 @@ class ConceptOccurrence:
 		for k, v in self.occurrence_map.items():
 			curr_node = hierarchy[k]
 			curr_node.accumulated += curr_node.occurrence
-			curr_node.walkBfs(topic_keys)
+			curr_node.walkBfs(topic_keys, topics)
 		res_ = {}
 		for k_res, v_res in topics_scores.items():
 			if k_res in topic_keys:
@@ -116,22 +116,25 @@ class ConceptOccurrence:
 class Node:
 	def __init__(self, name):
 		self.name = name
-		self.norm_name = norm_literal(name)
+		self.norm_name = ""
 		self.children = []
 		self.parents = []
 		self.occurrence = 0
 		self.accumulated = 0
+		self.weighted = 0.0
 
-	def walkBfs(self, topic_names):
+	def walkBfs(self, topic_names, topics):
 		queue = [self]
 		while queue:
 			current = queue.pop(0)
 			for parent in current.parents:
 				if parent.norm_name != current.norm_name:
 					if current.norm_name not in topic_names:
-						parent.accumulated += current.occurrence
+						parent.accumulated += 1 * current.occurrence
+						parent.weighted += current.occurrence * topics[parent.norm_name][current.norm_name][0]
 					else:
-						parent.accumulated += current.accumulated
+						parent.accumulated += 1 * current.accumulated
+						parent.weighted += current.accumulated * topics[parent.norm_name][current.norm_name][0]
 					queue.append(parent)
 
 
@@ -145,27 +148,31 @@ def read_topic_to_json_from_dir(directory):
 	hierarchy = {}
 	for filename in glob.glob(directory+"*"):
 		topic_name = basename(filename).split("__")[1].replace("_"," ")
-		topics[topic_name] = []
+		topic_norm_name = norm_literal(topic_name)
+		topics[topic_norm_name] = {}
 		for row in open(filename, 'r').readlines():
-			topics[topic_name].append( [row.split(" ")[0], row.split(" ")[1]] )
-		map_[norm_literal(topic_name)] = [topic_name, norm_literal(topic_name), counter]
-		if norm_literal(topic_name) not in hierarchy.keys():
+			child_name = row.split(" ")[0].replace("_"," ")
+			topics[topic_norm_name][norm_literal(child_name)] = [float(row.split(" ")[1].strip() ), child_name]
+		map_[topic_norm_name] = [topic_name, topic_norm_name, counter]
+		if topic_norm_name not in hierarchy.keys():
 			n = Node(topic_name)
+			n.norm_name = norm_literal(topic_name)
 			hierarchy[n.norm_name] = n
 		else:
 			n = hierarchy[norm_literal(topic_name)]
 		counter += 1
-		for v in topics[topic_name]:
-			if norm_literal(v[0]) in hierarchy.keys():
-				n.children.append(hierarchy[norm_literal(v[0])])
-				map_[norm_literal(v[0])] = [v[0], norm_literal(v[0]), counter]
+		for k, v in topics[topic_norm_name].items():
+			if k in hierarchy.keys():
+				n.children.append(hierarchy[k])
+				map_[k] = [v[1], k, counter]
 			else:
-				if v[0] != n.name:
-					child = Node(v[0])
+				if k != n.norm_name:
+					child = Node(v[1])
+					child.norm_name = k
 					child.parents.append(n)
 					hierarchy[child.norm_name] = child
 					n.children.append(child)
-					map_[norm_literal(v[0])] = [v[0], norm_literal(v[0]), counter]
+					map_[k] = [v[1], k, counter]
 	return map_, hierarchy, topics
 
 def read_topic_to_json_from_db(path):
@@ -181,24 +188,24 @@ def read_topic_to_json_from_db(path):
 			topic_name = p['name']
 			topics[topic_name] = []
 			for con in p['concepts']:
-				topics[topic_name].append( [ con['name'], con['weight'] ] )
+				topics[topic_name].append( { con['name']: con['weight'] } )
 			map_[norm_literal(topic_name)] = [topic_name, norm_literal(topic_name), p['id']]
 			if norm_literal(topic_name) not in hierarchy.keys():
 				n = Node(topic_name)
 				hierarchy[n.norm_name] = n
 			else:
 				n = hierarchy[norm_literal(topic_name)]
-			for v in topics[topic_name]:
-				if norm_literal(v[0]) in hierarchy.keys():
-					n.children.append(hierarchy[norm_literal(v[0])])
-					map_[norm_literal(v[0])] = [v[0], norm_literal(v[0]), counter]
+			for k, v in topics[topic_name]:
+				if norm_literal(k) in hierarchy.keys():
+					n.children.append(hierarchy[norm_literal(k)])
+					map_[norm_literal(k)] = [k, norm_literal(k), counter]
 				else:
-					if v[0] != n.name:
-						child = Node(v[0])
+					if k != n.name:
+						child = Node(k)
 						child.parents.append(n)
 						hierarchy[child.norm_name] = child
 						n.children.append(child)
-						map_[norm_literal(v[0])] = [v[0], norm_literal(v[0]), counter]
+						map_[norm_literal(k)] = [k, norm_literal(k), counter]
 		next = page['next']
 
 def read_from_multiple_files(directory):
@@ -221,8 +228,9 @@ def articles_to_map(path_list, path, pages=((0,10))):
 			page = json.load(urllib2.urlopen(next))
 			for p in page['results']:
 				if counter >= pages[0]:
-					doc_text = json.load( urllib2.urlopen( path + str(p['id']) ) )['plain_text']
-					articles[p['id']] = {'title': p['title'], 'body' : doc_text}
+					doc_text = p['plain_text']
+					identifier = json.loads(p['identifiers'])
+					articles[str(identifier[0])] = {'title': p['title'], 'body' : doc_text}
 		except Exception, e:
 			return articles
 		counter += 1
