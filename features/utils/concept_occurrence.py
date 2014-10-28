@@ -229,8 +229,8 @@ def articles_to_map(path_list, path, pages=((0,10))):
 			if counter >= pages[0]:
 				for p in page['results']:
 					doc_text = p['plain_text']
-					identifier = json.loads(p['identifiers'])
-					articles[str(identifier[0])] = {'title': p['title'], 'body' : doc_text}
+					identifier = p['id']
+					articles[str(identifier)] = {'title': p['title'], 'body' : doc_text}
 		except Exception, e:
 			return articles
 		counter += 1
