@@ -52,7 +52,7 @@ if file_type == "twitter":
 		if 'labels' in v:
 			scores = []
 			for pairs in v['labels']:
-				scores.append([ labels_map[pairs[0]][2], pairs[1] ])
+				scores.append([ labels_map[pairs[0]][0], pairs[1] ])
 			if scores:
 				print json.dumps({k : scores})
 
@@ -98,10 +98,10 @@ elif file_type == "scientific":
 		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics)
 
 if file_type != 'twitter':
-	# timestr = time.strftime("%Y%m%d/%H/")
-	# d = BASE_DIR + '/work/topics/' + str(timestr)
-	# if not os.path.exists(d):
-	# 	os.makedirs(d)
+	timestr = time.strftime("%Y%m%d/%H/")
+	d = BASE_DIR + '/work/topics/' + str(timestr)
+	if not os.path.exists(d):
+		os.makedirs(d)
 
 	sc = []
 	for k, v in docs_occurrence.items():
@@ -112,20 +112,8 @@ if file_type != 'twitter':
 			if scores:
 				sc.append(json.dumps({k : scores}))
 
-	print ("\n".join([el for el in sc]))
-	print ">>>>>>>>>>>>>>>>"
-
-	sc = []
-	for k, v in docs_occurrence.items():
-		if 'occurrence_map' in v:
-			scores = []
-			for pairs in v['occurrence_map']:
-				scores.append([ labels_map[pairs[0]][0], pairs[1] ])
-			if scores:
-				sc.append(json.dumps({k : scores}))
-
-	print ("\n".join([el for el in sc]))
-	# open(d + file_type + "_" + "_".join([str(num_pages[0]), str(num_pages[1])]) + '.json', 'w').write("\n".join([el for el in sc]))
+	# print ("\n".join([el for el in sc]))
+	open(d + file_type + "_" + "_".join([str(num_pages[0]), str(num_pages[1])]) + '.json', 'w').write("\n".join([el for el in sc]))
 
 # print("\n".join([json.dumps( {k : [ [ labels_map[pairs[0]][2], pairs[1]] for pairs in v['occurrence_map'] if 'occurrence_map' in v ] } ) for k, v in docs_occurrence.items()]))
 # {"tweet_id": {"preprocessed": ["bla", "bla", ...], "occurrence_map": [ ["topic1",score], ["topc2", score], ...] }}
