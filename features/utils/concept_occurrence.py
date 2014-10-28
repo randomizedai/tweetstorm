@@ -45,7 +45,7 @@ class ConceptOccurrence:
 		res_ = {}
 		for k_res, v_res in topics_scores.items():
 			if k_res in topic_keys:
-				res_[k_res] = topics_scores[k_res].accumulated
+				res_[k_res] = topics_scores[k_res].weighted
 		return res_
 
 	def update_text_with_underscores(self, tag_tuple_list, general_concepts_map):
@@ -220,14 +220,14 @@ def read_from_multiple_files(directory):
 def articles_to_map(path_list, path, pages=((0,10))):
 	articles = {}
 	next = path_list
-	counter = 0
+	counter = pages[0]
 	if len(pages) == 0:
 		pages = [0, json.load(urllib2.urlopen(next))["count"]]
 	while next and counter < pages[1]:
 		try:
 			page = json.load(urllib2.urlopen(next))
-			for p in page['results']:
-				if counter >= pages[0]:
+			if counter >= pages[0]:
+				for p in page['results']:
 					doc_text = p['plain_text']
 					identifier = json.loads(p['identifiers'])
 					articles[str(identifier[0])] = {'title': p['title'], 'body' : doc_text}
