@@ -220,7 +220,7 @@ def read_from_multiple_files(directory):
 def articles_to_map(path_list, path, pages=((0,10))):
 	articles = {}
 	next = path_list
-	counter = pages[0]
+	counter = pages[0] - 1
 	if len(pages) == 0:
 		pages = [0, json.load(urllib2.urlopen(next))["count"]]
 	while next and counter < pages[1]:
