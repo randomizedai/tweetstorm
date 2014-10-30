@@ -19,8 +19,10 @@ for line in data:
 tagger = getTagger(list_keywords)
 
 for row in sys.stdin:
-    tweet = json.loads(row)
-    matches = tagger.tag(tweet['text'].lower())
-    if len(matches) > 0:
-        print row.strip()
-    
+    try:
+        tweet = json.loads(row)
+        matches = tagger.tag(tweet['text'].lower())
+        if len(matches) > 0:
+            print row.strip()
+    except:
+        pass 
