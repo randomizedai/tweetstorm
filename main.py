@@ -191,5 +191,5 @@ def compute_feature_main(worker_id,debug=False):
  
  
 if __name__ == '__main__':
-    worker_main(1,debug=True)
-    
+    #worker_main(1,debug=True)
+    print "Loaded"
