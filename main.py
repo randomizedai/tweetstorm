@@ -164,7 +164,7 @@ def compute_feature_main(worker_id,debug=False):
    
         for i,file in enumerate(list_files):
             try:
-                status,message = compute_feature(feature, file, worker_id, debug)
+                status,message = compute_feature(config.get("downloads","download_dir"),feature, file, worker_id, debug)
                 if status == "success":
                     insert_into_table(con, worker_id, "files", {"machine_name":hostname,"path":message[0],"filename":message[1]\
                     ,"date_string":file['date_string'],"hour_string":file['hour_string'],"last_access":str(datetime.now())}, debug)
