@@ -11,9 +11,9 @@ from _chrefliterals import WordsDict, findLiterals, TextTag, TextTagList, normLi
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 defined_concepts = json.loads(open(BASE_DIR + "/../../data/concepts_with_synonyms.json",'r').read())
-issues = json.load(urllib2.urlopen("http://146.148.70.53/issues/list/?format=json"))
+issues = "http://146.148.70.53/issues/list/?format=json"
 weight = json.loads(open(BASE_DIR + "/../../data/issue_relevance_score_weight.json",'r').read())
-predicates = json.load(urllib2.urlopen("http://146.148.70.53/issues/predicate/list/?format=json"))
+# preds = json.load(urllib2.urlopen("http://146.148.70.53/issues/predicate/list/?format=json"))
 
 def read_verbal_ontology(path):
     with open(path + 'verb_vectors/vv-cause.csv', 'r') as f:
@@ -163,22 +163,28 @@ def compute_indicators_inner(file_type, text, title, abstract, id_element, verba
         index = weight['index_body'] * index_body \
               + weight['index_title'] * index_title \
               + weight['index_abstract'] * index_abstract
-        res_[id_element].append([key, index])
-    return res_
+        if index > 0:
+            res_[id_element].append([key, index])
+    if res_[id_element]:
+        return res_
 
 # Output: issue_id : [obj_norm_name; subj_norm_name; predicate_name; obj; subj]
-def issues_to_map(issues):
+def issues_to_map(path):
     triplets = {}
-    for issue in issues['results']:
-        triplets[issue['id']] = [norm_literal(issue['object']['name']), \
-                                    norm_literal(issue['subject']['name']), \
-                                    issue['predicate']['name'], \
-                                    issue['object']['name'],
-                                    issue['subject']['name']]
+    next = path
+    while next:
+        issues = json.load(urllib2.urlopen(next))
+        for issue in issues['results']:
+            triplets[issue['id']] = [norm_literal(issue['object']['name']), \
+                                        norm_literal(issue['subject']['name']), \
+                                        issue['predicate']['name'], \
+                                        issue['object']['name'],
+                                        issue['subject']['name']]
+        next = issues['next']
     return triplets
 
         
-def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map):
+def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map, triplets):
     import json
     res_ = {}
     tweet_id_text = {}
@@ -193,7 +199,6 @@ def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract
             text = codecs.open(file_path, 'r', 'utf-8').read()
         id_element = file_path
 
-    triplets = issues_to_map(issues)
     # TODO: Check the formal of title and abstract and pass them as text to the function
     res_ = compute_indicators_inner( 
         file_type=file_type, 
