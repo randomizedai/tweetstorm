@@ -35,7 +35,7 @@ def update_max_since_ids(query_type,query,new_minid,new_maxid,con,worker_id,debu
     elif query['since_id']:
         lqs = long(query['since_id'])
     
-        if ln_min < lqs:
+        if ln_min > lqs:
             new_query = dict(query)
             new_query.pop("id",None)
             new_query['since_id'] = str(query['since_id'])
@@ -54,6 +54,7 @@ def update_max_since_ids(query_type,query,new_minid,new_maxid,con,worker_id,debu
         update_table(con, worker_id, query_type, dictv, {"id": query["id"]}, debug)       
         new_query = dict(query)
         new_query.pop("id",None)
+        new_query.pop("since_id",None)
         new_query['max_id'] = str(new_minid) 
         new_query['last_access'] = str(datetime.now()) 
         insert_into_table(con, worker_id, query_type,new_query, debug)
@@ -78,13 +79,13 @@ def put_download_logs(query_type,query,status,results,worker_id,con,file_id,debu
         
 def process_output(query_type,query,status, results, worker_id, con, file_handle,file_id,debug=False):
     
-    if len(results) > 0:
+    if isinstance(results,list) and len(results) > 0:
         new_minid = compute_min_id(results)
         new_maxid = compute_max_id(results)
         dump_tweets_into_file(file_handle,results)
         update_max_since_ids(query_type,query,new_minid,new_maxid,con,worker_id,debug)
     
-    if len(results) < 2:
+    if isinstance(results,list) and len(results) < 2:
         update_table(con,worker_id,query_type,{"retries": query["retries"] + 1},{"id":query["id"]},debug)
    # elif status == "no-data":
    #     update_table(con, worker_id, query_type, {'last_access' : str(datetime.now())   }, {"id": query["id"]}, debug)        
