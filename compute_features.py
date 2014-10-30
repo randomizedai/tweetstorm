@@ -10,7 +10,7 @@ import subprocess
 def compute_feature(new_dir,feature_row,file_row,worker_id,debug=False):
     input_file_path = file_row['path']
     tokens = [x for x in input_file_path.split("/") if x]
-    new_dir_tokens = [x for x in new_dir if x]
+    new_dir_tokens = [x for x in new_dir.split("/") if x]
     tokens = new_dir_tokens + tokens[len(new_dir_tokens):]
     input_file_path = "/".join(tokens)
     filename = get_filename_from_path(input_file_path)
