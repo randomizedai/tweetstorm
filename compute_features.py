@@ -19,6 +19,7 @@ def compute_feature(new_dir,feature_row,file_row,worker_id,debug=False):
     temp_output_file_path = ""
     feature_command = feature_row['command'].replace("$input",input_file_path)
     dirname = os.path.dirname(output_file_path)
+    output_file_path = dirname  + "/" + output_filename
     mkdir_command = ""
     if feature_row['output_feature']:
         tempval = get_random_uuid()
