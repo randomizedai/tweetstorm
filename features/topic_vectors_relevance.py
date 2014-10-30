@@ -28,8 +28,8 @@ docs_occurrence = {}
 # labels_map and hierarchy is used for assigning preliminary topics to the docs
 # TODO: be able to read hierarchy in any order
 hierarchy = {} #json.loads(open(BASE_DIR + '/../../data/hierarchy_for_topics.json', 'r').read())
-labels_map, hierarchy, topics = read_topic_to_json_from_dir(BASE_DIR + '/../../data/topics/')
-# labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53/topics/list/')
+# labels_map, hierarchy, topics = read_topic_to_json_from_dir(BASE_DIR + '/../../data/topics/')
+labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53/topics/list/')
 # labels_map = json.loads(open(BASE_DIR + '/../../data/top_concepts.json', 'r').read()) # concepts_with_synonyms.concepts_for_topics.json
 # Labels that are used to construct the docs -> terms vectors
 # general_concepts_map is additionally enriched with occurrence of the concepts from the labels_map
@@ -52,7 +52,7 @@ if file_type == "twitter":
 		if 'labels' in v:
 			scores = []
 			for pairs in v['labels']:
-				scores.append([ labels_map[pairs[0]][0], pairs[1] ])
+				scores.append([ labels_map[pairs[0]][2], pairs[1] ])
 			if scores:
 				print json.dumps({k : scores})
 
@@ -108,7 +108,7 @@ if file_type != 'twitter':
 		if 'labels' in v:
 			scores = []
 			for pairs in v['labels']:
-				scores.append([ labels_map[pairs[0]][0], pairs[1] ])
+				scores.append([ labels_map[pairs[0]][2], pairs[1] ])
 			if scores:
 				sc.append(json.dumps({k : scores}))
 

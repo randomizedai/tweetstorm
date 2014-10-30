@@ -186,6 +186,7 @@ def read_topic_to_json_from_dir(directory):
 					map_[k] = [v[1], k, counter]
 	return map_, hierarchy, topics
 
+#path: http://146.148.70.53/topics/list/
 def read_topic_to_json_from_db(path):
 	topics = {}
 	map_ = {}
@@ -197,27 +198,35 @@ def read_topic_to_json_from_db(path):
 		# for each topic
 		for p in page['results']:
 			topic_name = p['name']
-			topics[topic_name] = []
-			for con in p['concepts']:
-				topics[topic_name].append( { con['name']: con['weight'] } )
-			map_[norm_literal(topic_name)] = [topic_name, norm_literal(topic_name), p['id']]
-			if norm_literal(topic_name) not in hierarchy.keys():
+			topic_norm_name = norm_literal(topic_name)
+			topics[topic_norm_name] = {}
+			for i, con in enumerate(p['concepts']):
+				if i == 0:
+					divide_by = float( con['weight'] )
+					if divide_by <= 1:
+						divide_by = 1
+				topics[topic_norm_name][norm_literal(con['name'])] = [ float(con['weight']) / divide_by, con['name']]
+			map_[topic_norm_name] = [topic_name, topic_norm_name, p['id']]
+			if topic_norm_name not in hierarchy.keys():
 				n = Node(topic_name)
-				hierarchy[n.norm_name] = n
+				n.norm_name = topic_norm_name
+				hierarchy[topic_norm_name] = n
 			else:
-				n = hierarchy[norm_literal(topic_name)]
-			for k, v in topics[topic_name]:
-				if norm_literal(k) in hierarchy.keys():
-					n.children.append(hierarchy[norm_literal(k)])
-					map_[norm_literal(k)] = [k, norm_literal(k), counter]
+				n = hierarchy[topic_norm_name]
+			for k, v in topics[topic_norm_name].items():
+				if k in hierarchy.keys():
+					n.children.append(hierarchy[k])
+					map_[k] = [v[1], k, p['id']]
 				else:
-					if k != n.name:
-						child = Node(k)
+					if k != n.norm_name:
+						child = Node(v[1])
+						child.norm_name = k
 						child.parents.append(n)
 						hierarchy[child.norm_name] = child
 						n.children.append(child)
-						map_[norm_literal(k)] = [k, norm_literal(k), counter]
+						map_[k] = [v[1], k, p['id']]
 		next = page['next']
+	return map_, hierarchy, topics
 
 def read_from_multiple_files(directory):
 	import glob, json
