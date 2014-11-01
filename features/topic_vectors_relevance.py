@@ -39,7 +39,7 @@ if file_type == "twitter":
 	# tweets = tweets_to_map("http://146.148.70.53/tweets/list/", "http://146.148.70.53/tweets/", num_pages)
 	# directory = BASE_DIR + "/../../data/julia_llda/"
 	# tweets = read_from_multiple_files(directory)
-
+        sys.setrecursionlimit(10000)
 	for row in sys.stdin:
 		v = json.loads(row)
 		k = v['id_str']
