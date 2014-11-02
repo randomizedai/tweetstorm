@@ -59,8 +59,8 @@ class ConceptOccurrence:
 		for k, v in self.occurrence_map.items():
 			curr_node = hir[k]
 			for parent in curr_node.parents:
-                                if parent.norm_name not in topics or curr_node.norm_name not in topics[parent.norm_name]:
-                                     continue
+				if parent.norm_name not in topics or curr_node.norm_name not in topics[parent.norm_name]:
+					continue
 				parent = hir[parent.norm_name]
 				parent.accumulated += curr_node.occurrence
 				parent.weighted += curr_node.occurrence * topics[parent.norm_name][curr_node.norm_name][0]
