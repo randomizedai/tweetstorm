@@ -23,11 +23,42 @@ class ConceptOccurrence:
 			res['preprocessed'] = self.preprocessed
 			res['occurrence_map'] = sorted([(k, v) for k,v in self.occurrence_map.items()], key=lambda x:x[1], reverse=True)
 			topics_scores = self.compute_hierarchy_scores_for_labels(hierarchy, topics)
+			topics_hierarchy_score = self.compute_score_for_manual_topics_hierarcy(topics_scores)
 			if topics_scores:
 				res['labels'] = sorted([(k, v) for k,v in topics_scores.items()], key=lambda x:x[1], reverse=True)
 			else:
 				res['labels'] = []
+			if topics_hierarchy_score:
+				res['hierarchy_labels'] = sorted([(k, v) for k, v in topics_hierarchy_score.items() if v > 0], key=lambda x:x[1], reverse=True)
+			else:
+				res['hierarchy_labels'] = []
 		return res
+
+
+	def compute_score_for_manual_topics_hierarcy(self, topics_scores):
+		import json, os
+		path = os.path.dirname(os.path.realpath(__file__)) + "/../../data/topics_hierarchy.json"
+		manual_hierarchy = json.loads( open(path, 'r').read() )
+		queue = []
+		manual_weights = {}
+		for k, v in manual_hierarchy.items():
+			queue.append((k, v))
+		while queue:
+			k, v = queue.pop(0)
+			manual_weights[k] = 0
+			for listofchildren in v:
+				k_v = listofchildren.keys()[0]
+				v_v = listofchildren.values()[0]
+				k_v_norm = norm_literal(k_v)
+				if k_v_norm in topics_scores:
+					manual_weights[k] += topics_scores[k_v_norm]
+				if not v_v:
+					if k_v_norm in topics_scores:
+						manual_weights[k_v] = topics_scores[k_v_norm]
+				else:
+					queue.append((k_v, v_v))
+		return manual_weights
+
 
 	def walkBfs(self, curr_node, topics, hierarchy):
 		# TODO: use hierarchy to access the nodes
@@ -159,11 +190,12 @@ def read_topic_to_json_from_dir(directory):
 		topic_name = basename(filename).split("__")[1].replace("_"," ")
 		topic_norm_name = norm_literal(topic_name)
 		topics[topic_norm_name] = {}
+		divide_by = 1
 		for i, row in enumerate(open(filename, 'r').readlines()):
-			if i == 0:
-				divide_by = float( row.split(" ")[1].strip() )
-				if divide_by <= 1:
-					divide_by = 1
+			# if i == 0:
+			# 	divide_by = float( row.split(" ")[1].strip() )
+			# 	if divide_by <= 1:
+			# 		divide_by = 1
 			child_name = row.split(" ")[0].replace("_"," ")
 			topics[topic_norm_name][norm_literal(child_name)] = [float(row.split(" ")[1].strip() ) / divide_by, child_name]
 		map_[topic_norm_name] = [topic_name, topic_norm_name, counter]

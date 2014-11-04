@@ -29,7 +29,7 @@ docs_occurrence = {}
 # TODO: be able to read hierarchy in any order
 hierarchy = {} #json.loads(open(BASE_DIR + '/../../data/hierarchy_for_topics.json', 'r').read())
 # labels_map, hierarchy, topics = read_topic_to_json_from_dir(BASE_DIR + '/../../data/topics/')
-labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53/topics/list/?page_size=100')
+labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53/topics/list/?page_size=1000')
 # labels_map = json.loads(open(BASE_DIR + '/../../data/top_concepts.json', 'r').read()) # concepts_with_synonyms.concepts_for_topics.json
 # Labels that are used to construct the docs -> terms vectors
 # general_concepts_map is additionally enriched with occurrence of the concepts from the labels_map
@@ -48,11 +48,19 @@ if file_type == "twitter":
 		occurrence.get_occurrence_count(labels_map, hierarchy, general_concepts_map)
 		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics)
 
+	# for k, v in docs_occurrence.items():
+	# 	if 'labels' in v:
+	# 		scores = []
+	# 		for pairs in v['labels']:
+	# 			scores.append([ labels_map[pairs[0]][2], pairs[1] ])
+	# 		if scores:
+	# 			print json.dumps({k : scores})
+
 	for k, v in docs_occurrence.items():
-		if 'labels' in v:
+		if 'hierarchy_labels' in v:
 			scores = []
-			for pairs in v['labels']:
-				scores.append([ labels_map[pairs[0]][2], pairs[1] ])
+			for pairs in v['hierarchy_labels']:
+				scores.append([ pairs[0], pairs[1] ])
 			if scores:
 				print json.dumps({k : scores})
 
