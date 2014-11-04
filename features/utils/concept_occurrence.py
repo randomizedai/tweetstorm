@@ -45,7 +45,8 @@ class ConceptOccurrence:
 			queue.append((k, v))
 		while queue:
 			k, v = queue.pop(0)
-			manual_weights[k] = 0
+			k_norm = norm_literal(k)
+			manual_weights[k] = topics_scores[k_norm] if (k_norm in topics_scores and topics_scores[k_norm] > 0) else 0
 			for listofchildren in v:
 				k_v = listofchildren.keys()[0]
 				v_v = listofchildren.values()[0]
