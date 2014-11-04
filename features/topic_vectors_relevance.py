@@ -35,6 +35,8 @@ labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53
 # general_concepts_map is additionally enriched with occurrence of the concepts from the labels_map
 general_concepts_map = {} # load_csv_terms(BASE_DIR + '/../../data/amitlist.csv') # 1_climate_keyphrases_aggr_filtered_844
 
+manual_hierarchy_map = json.loads( open(BASE_DIR + '/../../data/topic_hierarchy_map.json', 'r').read() )
+
 if file_type == "twitter":
 	# tweets = tweets_to_map("http://146.148.70.53/tweets/list/", "http://146.148.70.53/tweets/", num_pages)
 	# directory = BASE_DIR + "/../../data/julia_llda/"
@@ -60,7 +62,8 @@ if file_type == "twitter":
 		if 'hierarchy_labels' in v:
 			scores = []
 			for pairs in v['hierarchy_labels']:
-				scores.append([ pairs[0], pairs[1] ])
+				if pairs[0] in manual_hierarchy_map:
+					scores.append([ manual_hierarchy_map[pairs[0]], pairs[1] ])
 			if scores:
 				print json.dumps({k : scores})
 
@@ -113,12 +116,22 @@ if file_type != 'twitter':
 
 	sc = []
 	for k, v in docs_occurrence.items():
-		if 'labels' in v:
+		if 'hierarchy_labels' in v:
 			scores = []
-			for pairs in v['labels']:
-				scores.append([ labels_map[pairs[0]][2], pairs[1] ])
+			for pairs in v['hierarchy_labels']:
+				if pairs[0] in manual_hierarchy_map:
+					scores.append([ manual_hierarchy_map[pairs[0]], pairs[1] ])
 			if scores:
 				sc.append(json.dumps({k : scores}))
+
+	# sc = []
+	# for k, v in docs_occurrence.items():
+	# 	if 'labels' in v:
+	# 		scores = []
+	# 		for pairs in v['labels']:
+	# 			scores.append([ labels_map[pairs[0]][2], pairs[1] ])
+	# 		if scores:
+	# 			sc.append(json.dumps({k : scores}))
 
 	# print ("\n".join([el for el in sc]))
 	open(d + file_type + "_" + "_".join([str(num_pages[0]), str(num_pages[1])]) + '.json', 'w').write("\n".join([el for el in sc]))
