@@ -223,13 +223,18 @@ def read_topic_to_json_from_dir(directory):
 
 #path: http://146.148.70.53/topics/list/
 def read_topic_to_json_from_db(path):
+	import time
 	topics = {}
 	map_ = {}
 	counter = 0
 	hierarchy = {}
 	next = path
 	while next:
-		page = json.load(urllib2.urlopen(next))
+		try:
+			page = json.load(urllib2.urlopen(next))
+		except Exception, e:
+			time.sleep(10)
+			return read_topic_to_json_from_db(path)
 		# for each topic
 		for p in page['results']:
 			topic_name = p['name']
