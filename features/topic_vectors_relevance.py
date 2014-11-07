@@ -30,7 +30,7 @@ docs_occurrence = {}
 # TODO: be able to read hierarchy in any order
 hierarchy = {} #json.loads(open(BASE_DIR + '/../../data/hierarchy_for_topics.json', 'r').read())
 # labels_map, hierarchy, topics = read_topic_to_json_from_dir(BASE_DIR + '/../../data/topics/')
-labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53/topics/list/?page_size=1000')
+labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53/topics/list/?page_size=1000&concepts=1')
 # labels_map = json.loads(open(BASE_DIR + '/../../data/top_concepts.json', 'r').read()) # concepts_with_synonyms.concepts_for_topics.json
 # Labels that are used to construct the docs -> terms vectors
 # general_concepts_map is additionally enriched with occurrence of the concepts from the labels_map
