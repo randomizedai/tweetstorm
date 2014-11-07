@@ -1,0 +1,669 @@
+{
+    "CLIMATE CHANGE ACTORS": [
+        {
+            "carbon farming initiative": []
+        },
+        {
+            "green climate fund": []
+        },
+        {
+            "national climatic data center": []
+        },
+        {
+            "Intergovernmental Panel on Climate Change": []
+        },
+        {
+            "world climate research programme": []
+        },
+        {
+            "the climate reality project": []
+        },
+        {
+            "un environment programme": []
+        },
+        {
+            "United Nations Framework Convention on Climate Change": []
+        },
+        {
+            "Global Climate Change Alliance": []
+        },
+        {
+            "Climate Response Fund": []
+        },
+        {
+            "Electronic Development and Environment Information System": []
+        },
+        {
+            "Yale Project on Climate Change Communication": []
+        },
+        {
+            "climate change committee": []
+        },
+        {
+            "coalition direct action": []
+        },
+        {
+            "environmental defense fund": []
+        },
+        {
+            "climate spectator": []
+        },
+        {
+            "wri insights": []
+        },
+        {
+            "national snow and ice data center": []
+        },
+        {
+            "climate prediction center": []
+        },
+        {
+            "bureau of meteorology": []
+        },
+        {
+            "world meteorological organization": []
+        },
+        {
+            "climate central": []
+        },
+        {
+            "gwpf": []
+        },
+        {
+            "unep": []
+        },
+        {
+            "ecowatch": []
+        },
+        {
+            "European Environment Agency": []
+        },
+        {
+            "joint typhoon warning center": []
+        },
+        {
+            "national oceanic and atmospheric administration": []
+        },
+        {
+            "solar impulse": []
+        }
+    ],
+    "CLIMATE CHANGE CAUSES": [
+        {
+            "mankind": []
+        },
+        {
+            "pollution": [
+                {
+                    "atmospheric pollution": [
+                        {
+                            "aerosols": [
+                                {
+                                    "sulfate aerosols": []
+                                },
+                                {
+                                    "organic aerosol": []
+                                }
+                            ]
+                        },
+                        {
+                            "halocarbons": []
+                        },
+                        {
+                            "photochemical smog": []
+                        },
+                        {
+                            "volcanic eruption": []
+                        },
+                        {
+                            "fly ash": []
+                        },
+                        {
+                            "biomass burning": []
+                        },
+                        {
+                            "fuel burning": [
+                                {
+                                    "fossil fuel": [
+                                        {
+                                            "fracking": [
+                                                {
+                                                    "shale gas": []
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "coal": []
+                                        },
+                                        {
+                                            "oil": [
+                                                {
+                                                    "tar sands oil": []
+                                                },
+                                                {
+                                                    "shale oil": []
+                                                },
+                                                {
+                                                    "oil shale": []
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "biofuel": []
+                                }
+                            ]
+                        },
+                        {
+                            "GHG": [
+                                {
+                                    "carbon emissions": [
+                                        {
+                                            "black carbon": []
+                                        },
+                                        {
+                                            "carbon dioxide": []
+                                        },
+                                        {
+                                            "carbon monoxide": []
+                                        }
+                                    ]
+                                },
+                                {
+                                    "water vapor": []
+                                },
+                                {
+                                    "carbon dioxide": [
+                                        {
+                                            "anthropogenic carbon dioxide": []
+                                        }
+                                    ]
+                                },
+                                {
+                                    "methane": []
+                                },
+                                {
+                                    "nitrous oxide": []
+                                },
+                                {
+                                    "ozone": []
+                                },
+                                {
+                                    "nmvoc": []
+                                },
+                                {
+                                    "sulfur hexafluoride": []
+                                },
+                                {
+                                    "hydrofluorocarbon": []
+                                },
+                                {
+                                    "perfluorocarbons": []
+                                },
+                                {
+                                    "trace gases": []
+                                },
+                                {
+                                    "Airborne fraction": []
+                                }
+                            ]
+                        },
+                        {
+                            "transportation": []
+                        },
+                        {
+                            "consumption": [
+                                {
+                                    "agricultural intensification": []
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "deforestation": [
+                {
+                    "tree mortality": []
+                },
+                {
+                    "selective logging": []
+                },
+                {
+                    "forest degradation": []
+                }
+            ]
+        },
+        {
+            "galactic cosmic rays": []
+        },
+        {
+            "global dimming": []
+        },
+        {
+            "ozone hole": []
+        },
+        {
+            "solar activity": []
+        },
+        {
+            "urban heat": []
+        },
+        {
+            "climate feedback": []
+        }
+    ],
+    "CLIMATE CHANGE EVENTS": [
+        {
+            "third assessment report": []
+        },
+        {
+            "fourth assessment report": []
+        },
+        {
+            "kyoto protocol": [
+                {
+                    "Post-Kyoto": []
+                }
+            ]
+        },
+        {
+            "defra report": []
+        },
+        {
+            "montreal protocol": []
+        },
+        {
+            "international polar year": []
+        },
+        {
+            "climate change summit": []
+        },
+        {
+            "copenhagen climate summit": []
+        },
+        {
+            "durban climate": []
+        }
+    ],
+    "CLIMATE CHANGE IMPACTS": [
+        {
+            "environmental impact": [
+                {
+                    "climate extremes": [
+                        {
+                            "temperature extremes": [
+                                {
+                                    "heat extremes": []
+                                }
+                            ]
+                        },
+                        {
+                            "polar vortex": []
+                        },
+                        {
+                            "hurricanes": [
+                                {
+                                    "el nino": []
+                                },
+                                {
+                                    "storm Sandy": []
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "seasonal shift": []
+                },
+                {
+                    "sea level rise": []
+                },
+                {
+                    "acid rain": []
+                },
+                {
+                    "flood": []
+                },
+                {
+                    "wild fire ": []
+                },
+                {
+                    "climate feedback": []
+                },
+                {
+                    "land degradation": []
+                },
+                {
+                    "ice melting": [
+                        {
+                            "thawing permafrost": []
+                        },
+                        {
+                            "arctic melt": []
+                        },
+                        {
+                            "albedo feedback": []
+                        },
+                        {
+                            "deglaciation": []
+                        }
+                    ]
+                },
+                {
+                    "biodiversity": [
+                        {
+                            "turtles": []
+                        },
+                        {
+                            "bees": []
+                        },
+                        {
+                            "polar bears": []
+                        },
+                        {
+                            "penguins": []
+                        },
+                        {
+                            "coral bleaching": []
+                        },
+                        {
+                            "zooplankton": []
+                        },
+                        {
+                            "tropical vegetation": []
+                        },
+                        {
+                            "phenotypic plasticity": []
+                        },
+                        {
+                            "forest ecosystem": []
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "socioeconomic impact": [
+                {
+                    "health": []
+                },
+                {
+                    "standard of living": []
+                },
+                {
+                    "migration": []
+                },
+                {
+                    "vulnerable population": [
+                        {
+                            "indigenous people": [
+                                {
+                                    "land rights": []
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "least developed countries": []
+                },
+                {
+                    "poverty": []
+                },
+                {
+                    "food": [
+                        {
+                            "crop": []
+                        }
+                    ]
+                },
+                {
+                    "water": [
+                        {
+                            "groundwater recharge": []
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "CLIMATE CHANGE MEASURES": [
+        {
+            "mitigation": [
+                {
+                    "climate engineering": [
+                        {
+                            "carbon dioxide air capture": []
+                        }
+                    ]
+                },
+                {
+                    "afforestation": []
+                },
+                {
+                    "emission reduction": [
+                        {
+                            "emission trading": []
+                        },
+                        {
+                            "clean development mechanism": []
+                        },
+                        {
+                            "carbon tax": []
+                        }
+                    ]
+                },
+                {
+                    "energy policy": [
+                        {
+                            "renewable energy": []
+                        },
+                        {
+                            "bioenergy": []
+                        },
+                        {
+                            "nuclear energy": []
+                        },
+                        {
+                            "solar panel": [
+                                {
+                                    "white roofs project": []
+                                }
+                            ]
+                        },
+                        {
+                            "solar radiation management": []
+                        },
+                        {
+                            "biofuels": []
+                        },
+                        {
+                            "synthesis gas": []
+                        },
+                        {
+                            "wind power": []
+                        }
+                    ]
+                },
+                {
+                    "low carbon technology": []
+                },
+                {
+                    "sustainable development": [
+                        {
+                            "sustainable logging": []
+                        },
+                        {
+                            "sustainable land use": [
+                                {
+                                    "organic agriculture": []
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "iron fertilization": []
+                }
+            ]
+        },
+        {
+            "adaptation": [
+                {
+                    "shore protection": []
+                },
+                {
+                    "adaptive capacity": [
+                        {
+                            "adaptive behavior": []
+                        },
+                        {
+                            "complex adaptive system": []
+                        }
+                    ]
+                },
+                {
+                    "boreal forest": []
+                }
+            ]
+        },
+        {
+            "climate change commitment": []
+        },
+        {
+            "environmental governance": []
+        },
+        {
+            "geo engineering": []
+        },
+        {
+            "lulucf": []
+        },
+        {
+            "regulation": []
+        },
+        {
+            "redd projects": []
+        }
+    ],
+    "CLIMATE PHENOMENA": [
+        {
+            "climate change": [
+                {
+                    "global warming": []
+                },
+                {
+                    "global cooling": []
+                },
+                {
+                    "bio-geochemical changes": []
+                }
+            ]
+        },
+        {
+            "climate variability": [
+                {
+                    "quasi biennial oscillation": []
+                },
+                {
+                    "climate response": []
+                },
+                {
+                    "paleoclimate": [
+                        {
+                            "medieval warm period": []
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "CLIMATE SCIENCE": [
+        {
+            "carbon cycle": [
+                {
+                    "autotrophic respiration": []
+                }
+            ]
+        },
+        {
+            "surface temperature": []
+        },
+        {
+            "terrestrial ecosystems": [
+                {
+                    "land cover": []
+                }
+            ]
+        },
+        {
+            "temperature gradient": []
+        },
+        {
+            "latent heat flux": []
+        },
+        {
+            "multiple equilibria": []
+        },
+        {
+            "global land data assimilation system": []
+        },
+        {
+            "climate assessment": [
+                {
+                    "integrated assessment": []
+                },
+                {
+                    "radiative forcing": []
+                }
+            ]
+        },
+        {
+            "paleoclimatology": []
+        },
+        {
+            "climate modeling": [
+                {
+                    "global climate model": []
+                },
+                {
+                    "general circulation model": []
+                },
+                {
+                    "Atmosphere-Ocean General Circulation Model": []
+                },
+                {
+                    "Earth-system models of intermediate complexity": []
+                },
+                {
+                    "integrated assessment modeling": []
+                },
+                {
+                    "hydrological modeling": []
+                }
+            ]
+        },
+        {
+            "phenology": []
+        },
+        {
+            "atmospheric science": [
+                {
+                    "atmospheric chemistry": []
+                },
+                {
+                    "atmospheric lifetime": []
+                }
+            ]
+        },
+        {
+            "oceanography": []
+        },
+        {
+            "limnology": []
+        }
+    ]
+}
