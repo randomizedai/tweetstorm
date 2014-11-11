@@ -1,8 +1,8 @@
-from concurrent import futures
 import sys
 import os
 # NOTE: We need to have get_parse_tree file in the code folder
 sys.path.append(".")
+sys.path.append("/opt/texpp")
 from get_parse_tree import parse_file, preprocessText
 import parsetreenode
 from _chrefliterals import WordsDict, findLiterals, TextTag, TextTagList, normLiteral
@@ -42,18 +42,18 @@ def parse_tree_from_file(path_to_parse_trees, separator):
     text = read_file_remotely_or_localy(path_to_parse_trees).rstrip().lstrip()
     # Split the text by the file path
     # dirname = os.path.dirname(os.path.realpath(path_to_parse_trees))
-    sentences = text.split('\t')
+    sentences = text.split('\n')
     # split the lines by the separator
     sen_parse_tree_list = []
     for sen in sentences:
         if sen:
-            article_name, positions, sentence, parse_tree = sen.split(separator)
             try:
+                article_name, positions, sentence, parse_tree = sen.split(separator)
                 position_current_1, position_current_2 = positions.split("_")
                 position_current_1 = int(position_current_1)
                 position_current_2 = int(position_current_2)
             except ValueError:
-                return 0
+                return sen_parse_tree_list
             sen_parse_tree_list.append((position_current_1, position_current_2, parse_tree))
     sen_parse_tree_list_sorted = sorted(sen_parse_tree_list, key=lambda x: x[0])
     return sen_parse_tree_list_sorted
@@ -108,7 +108,7 @@ Returns:
 '''
 # TODO: Add functionality: printing the predicate - 
 # so that to have printed words only between two concepts with a tag V_
-def findNpVpNpPatternFor(node1, node2):
+def findNpVpNpPatternFor(node1, node2, debug=0):
     if node1.parent is not None and node1.parent.tag.startswith('N'):
         pnode1 = node1.parent
     else:
@@ -118,6 +118,11 @@ def findNpVpNpPatternFor(node1, node2):
     else:
         pnode2 = node2
 
+    if debug:
+        print ">>>>>>>> Node names (parent node names)"
+        print pnode1.getText()
+        print pnode2.getText()
+
     if not pnode1.tag.startswith('N'):
         return None
     if not pnode2.tag.startswith('N'):
@@ -125,10 +130,16 @@ def findNpVpNpPatternFor(node1, node2):
 
     sibling1 = pnode1.findMyParentSiblingFor(pnode2)
     if sibling1 is not None:
+        if debug:
+            print "Sibling found"
+            print sibling1.getText()
         if sibling1.tag.startswith('V'):
             return node2, sibling1, node1
     else:
         sibling2 = pnode2.findMyParentSiblingFor(pnode1)
+        if debug:
+            print "Sibling found"
+            print sibling2.getText()
         if sibling2 is not None and sibling2.tag.startswith('V'):
             return node1, sibling2, node2
     return None
@@ -163,7 +174,7 @@ Function to be run in parallel
 Input: Given the text of the file, sentence positions and parse tree as parse_tree_input  and concepts to find
 Output: ((concept1, verbal phrase, concept2), positions of the sentence)
 """
-def find_matched_verbal_phrase(file_content, parse_tree_input, concepts_to_find, debug):
+def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, debug):
     import codecs, re
     triplets = []
     pos1, pos2, parse_tree = parse_tree_input
@@ -179,7 +190,12 @@ def find_matched_verbal_phrase(file_content, parse_tree_input, concepts_to_find,
         new_parse_trees = [parse_tree]
 
     for parse_tr in new_parse_trees:
-        temp_literals = dict([(norm_literal(l).encode('utf-8'), 1) for l in concepts_to_find])
+        temp_literals = {}
+        for term in concepts_to_find:
+            norm_term = norm_literal(term)
+            for k, v in labels_map.items():
+                if v[1] == norm_term:
+                    temp_literals[k.encode('utf-8')] = 1
         
         tree_structure = parsetreenode.ParseTreeNode.parse(parse_tr)
         root = None
@@ -193,20 +209,29 @@ def find_matched_verbal_phrase(file_content, parse_tree_input, concepts_to_find,
 
         tag_list = get_terms_from_string(sentence, temp_literals)
         tag_tuple_list = [(l.value, l.start, l.end) for l in tag_list]
+
+        tag_tuple_list_syn = []
+        for el in tag_tuple_list:
+            tag_tuple_list_syn.append( (labels_map[el[0]][1], el[1], el[2]) )
+
         if debug:
+            print "--------------"
             print tag_tuple_list
-        if len(set([l[0] for l in tag_tuple_list])) != 2:
+            print tag_tuple_list_syn
+        if len(set([l[0] for l in tag_tuple_list_syn])) != 2:
             return triplets
 
         # pair = [(('concept1', pos1, pos2, relative_position)),
         #   (('concept2', pos1, pos2, relative_position))]
         # where relative position is (?): ...climate(1) ...climate(2)...
-        for pair in get_pairs_from_concepts(tag_tuple_list):
+        for pair in get_pairs_from_concepts(tag_tuple_list_syn):
             if debug:
+                print ">>>>>>>>>>>> Pair detected >>>>>>>>>>>"
                 print parse_tr
                 print pair
                 print sentence[pair[0][1]:pair[0][2]], ";", sentence[pair[1][1]:pair[1][2]]
                 print root.getText()
+                print "-------------"
             triplet = None
             try:
                 index1 = pair[0][3]
@@ -214,12 +239,16 @@ def find_matched_verbal_phrase(file_content, parse_tree_input, concepts_to_find,
                 while index1 + 1 > len(occur1):
                     index1 = index1 - 1
                 node1 = occur1[index1]
+                if debug:
+                    print node1.getText()
                 index2 = pair[1][3]
                 occur2 = root.findNodesForConcept(sentence[pair[1][1]:pair[1][2]])
                 while index2 + 1> len(occur2):
                     index2 = index2 - 1
                 node2 = occur2[index2]
-                triplet = findNpVpNpPatternFor(node1, node2)
+                if debug:
+                    print node2.getText()
+                triplet = findNpVpNpPatternFor(node1, node2, debug)
             except Exception, e:
                 print e
             if triplet is not None:
@@ -230,102 +259,3 @@ def find_matched_verbal_phrase(file_content, parse_tree_input, concepts_to_find,
 def read_file_remotely_or_localy(file_path):
     import codecs
     return codecs.open(file_path, 'r', 'utf-8').read()
-
-""" 1. Get an article from input file_path
-2. Process each sentence separately
-3. Find is there are two concepts that are defined in the sentence
-NOTE: Required to texpp library to be imported
-4. Output the verbal phrase between the concepts
-"""
-def main(file_path, num_threads, debug=0, concepts_to_find=['water', 'drought'], parser_path="/vagrant/stanford-parser-2012-11-12/lexparser.sh"):
-    path_to_parse_trees = file_path + '.parse_tree'
-    if not os.path.exists(path_to_parse_trees):
-        # TODO: Make call of this function parallel with a path to stanfordparser
-	if not os.path.exists(parser_path):
-	    exit(1)
-        parse_file(file_path, parser_path)
-    separator = "_____@@@@@_____"
-    parse_trees = parse_tree_from_file(path_to_parse_trees, separator)
-    if debug:
-        print "Number of sentences to process", len(parse_trees)
-    futures_list = []
-    results = []
-
-    file_content = read_file_remotely_or_localy(file_path)
-
-    if debug:
-        print "Number of threads", num_threads
-
-    # with futures.ProcessPoolExecutor(max_workers=int(num_threads)) as executor:
-    #     if debug:
-    #         print ">>> Executor started."
-    #     # parse_tree_construction = [pos1, pos2, parse_tree],
-    #     # where pos are the positions of the sentence in the originaltext
-    #     for parse_tree_construction in parse_trees:
-    #         if debug:
-    #             print "processing a parse tree"
-    #         futures_list.append(
-    #             executor.submit(
-    #                 find_matched_verbal_phrase, 
-    #                 file_content,
-    #                 parse_tree_construction, 
-    #                 concepts_to_find,
-    #                 debug))
-    #         if debug:
-    #             print "Len of futures_List", len(futures_list)
-    #     for future in futures_list:
-    #         future_result = future.result()
-    #         future_exception = future.exception()
-    #         if future_exception is not None:
-    #             print "!!! Future returned an exception:", future_exception
-    #         else:
-    #             if future_result:
-    #                 results.extend(future_result)
-
-    for parse_tree_construction in parse_trees:
-        results.extend(
-            find_matched_verbal_phrase(file_content, 
-                parse_tree_construction, 
-                concepts_to_find,
-                debug)
-            )
-    if debug:
-        print "Have", len(results), "Sentence matches"
-        print "For concepts:", concepts_to_find[0], 'and', concepts_to_find[1]
-    for el in results:
-        print el[0][1].getTextOfNotTagOnly('N')
-    return results
-
-
-
-# if __name__ == "__main__":
-#     import sys, getopt
-#     num_threads = 1
-#     file_path = 'articles/s00114-011-0762-7.txt'
-#     concepta = 'water'
-#     conceptb = 'drought'
-#     parser_path = "/vagrant/stanford-parser-2012-11-12/lexparser.sh"
-#     argv = sys.argv[1:]
-#     try:
-#         opts, args = getopt.getopt(argv, "ht:f:a:b:p:", ["thread=", "file=", "aconcept=", "bconcept=", "parser="])
-#     except getopt.GetoptError:
-#         print 'outputVerbalPhrase.py -t <number of threads> -f <article/file path> -a <first concepts> -b <second concept> -p <parser file lexparser.sh; default is /vagrant/stanford-parser-2012-11-12/lexparser.sh>'
-#         sys.exit(2)
-
-#     for opt, arg in opts:
-#         if opt == '-h':
-#             print 'outputVerbalPhrase.py -t <number of threads> -f <article/file path> -a <first concepts> -b <second concept> -p <parser file lexparser.sh>'
-#             sys.exit()
-#         elif opt in ("-t", "--thread"):
-#             num_threads = int(arg)
-#         elif opt in ("-f", "--file"):
-#             file_path = arg
-#         elif opt in ("-a", "--aconcept"):
-#             concepta = arg
-#         elif opt in ("-b", "--bconcept"):
-#             conceptb = arg
-#         elif opt in ("-p", "--parser"):
-#             parser_path = arg
-
-#     triplets = main(file_path = file_path, num_threads=num_threads, debug=0, concepts_to_find=[concepta, conceptb], parser_path=parser_path)
-

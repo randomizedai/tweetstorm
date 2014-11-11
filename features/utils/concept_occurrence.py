@@ -277,22 +277,24 @@ def read_from_multiple_files(directory):
 			tweets[tweet['url']] = {'text' : tweet['content']}
 	return tweets
 
-def articles_to_map(path_list, path, pages=((0,10))):
+def articles_to_map(path_list, path, pages=(0,10) ):
 	articles = {}
 	next = path_list
-	counter = pages[0] - 1
+	counter = pages[0]
 	if len(pages) == 0:
-		pages = [0, json.load(urllib2.urlopen(next))["count"]]
+		pages = [0, int(json.load(urllib2.urlopen(next))["count"]/100)]
 	while next and counter < pages[1]:
 		try:
 			page = json.load(urllib2.urlopen(next))
-			if counter >= pages[0]:
-				for p in page['results']:
-					doc_text = p['plain_text']
-					identifier = p['id']
-					articles[str(identifier)] = {'title': p['title'], 'body' : doc_text}
+			if counter == 0:
+				print "Count: ", page['count']
 		except Exception, e:
-			return articles
+			return articles_to_map(path_list, path, pages=(counter,pages[1]) )
+		if counter >= pages[0]:
+			for p in page['results']:
+				doc_text = p['plain_text']
+				identifier = p['id']
+				articles[str(identifier)] = {'title': p['title'], 'body' : doc_text}
 		counter += 1
 		next = page['next']
 	return articles

@@ -6,7 +6,6 @@ from tempfile import NamedTemporaryFile
 
 PATH=''
 
-
 def detect_sentences(text):
     dot_list = []
     for i, c in enumerate(text):
@@ -55,9 +54,10 @@ def main():
         location = PATH + location
         parse_file(location.strip())
         
-def parse_file(location, path_to_parser="/home/iuliia.proskurnia/stanford-parser-2012-11-12/lexparser.sh"):
-    with codecs.open(location, 'r', 'utf-8') as fh:
-        text = fh.read()
+def parse_file(location, text=None, path_to_parser="/home/iuliia.proskurnia/stanford-parser-2012-11-12/lexparser.sh"):
+    if text is None:
+        with codecs.open(location, 'r', 'utf-8') as fh:
+            text = fh.read()
     dot_list = detect_sentences(text)
     tag_tuple_list = []
     for el in dot_list:
@@ -83,8 +83,9 @@ def parse_file(location, path_to_parser="/home/iuliia.proskurnia/stanford-parser
                     fh.seek(0)
                     parse_tree = subprocess.Popen([path_to_parser, fh.name], stdout=subprocess.PIPE).stdout.read().decode("utf-8").encode('ascii', 'ignore')
                 os.unlink(filename)
-                f_parse_tree_out.write('%s%s%d_%d%s%s%s%s\t' % (location, separator, index, sorted_tag_list[k][2], separator, sen, separator, parse_tree.replace('\n', ' ')))
+                f_parse_tree_out.write('%s%s%d_%d%s%s%s%s\n' % (location, separator, index, sorted_tag_list[k][2], separator, sen, separator, parse_tree.replace('\n', ' ')))
             i += 1
+    return location + ".parse_tree"
 
 if __name__ == "__main__":
     main()
