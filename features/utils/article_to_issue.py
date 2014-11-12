@@ -14,9 +14,9 @@ BASE_DIR = '/vagrant/julia/VerbalPhraseDetection/tweetstorm/features/utils'
 
 # TODO: Should be different defined concpets!!!
 # defined_concepts = json.loads(open(BASE_DIR + "/../../data/concepts_with_synonyms.json",'r').read())
-# labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53/topics/list/?page_size=100&concepts=1')
-labels_map = json.loads(open('utils/lab.json', 'r').read())
-topics = json.loads(open('utils/top.json', 'r').read())
+labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53/topics/list/?page_size=100&concepts=1')
+# labels_map = json.loads(open('utils/lab.json', 'r').read())
+# topics = json.loads(open('utils/top.json', 'r').read())
 issues = "http://146.148.70.53/issues/list/?format=json"
 weight = json.loads(open(BASE_DIR + "/../../data/issue_relevance_score_weight.json",'r').read())
 # preds = json.load(urllib2.urlopen("http://146.148.70.53/issues/predicate/list/?format=json"))
