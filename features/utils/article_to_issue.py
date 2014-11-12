@@ -5,12 +5,18 @@ sys.path.append(".")
 sys.path.append("/opt/texpp")
 from get_parse_tree import parse_file, preprocessText, detect_sentences
 import parsetreenode
+from concept_occurrence import *
 from outputVerbalPhrase import norm_literal, get_terms_from_string, get_stopwords
 from _chrefliterals import WordsDict, findLiterals, TextTag, TextTagList, normLiteral
 
-BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+BASE_DIR = '/vagrant/julia/VerbalPhraseDetection/tweetstorm/features/utils'
+# os.path.dirname(os.path.realpath(__file__))
 
-defined_concepts = json.loads(open(BASE_DIR + "/../../data/concepts_with_synonyms.json",'r').read())
+# TODO: Should be different defined concpets!!!
+# defined_concepts = json.loads(open(BASE_DIR + "/../../data/concepts_with_synonyms.json",'r').read())
+# labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53/topics/list/?page_size=100&concepts=1')
+labels_map = json.loads(open('utils/lab.json', 'r').read())
+topics = json.loads(open('utils/top.json', 'r').read())
 issues = "http://146.148.70.53/issues/list/?format=json"
 weight = json.loads(open(BASE_DIR + "/../../data/issue_relevance_score_weight.json",'r').read())
 # preds = json.load(urllib2.urlopen("http://146.148.70.53/issues/predicate/list/?format=json"))
@@ -59,7 +65,6 @@ def findWholeWord(w):
     import re
     return re.compile(r'\b({0})\b'.format(w), flags=re.IGNORECASE).search
 
-# TODO: FIx stuff with predicates
 def predicate_synonimization(sentence, verbs_map):
     predicate_set = []
     for k, v in verbs_map.iteritems():
@@ -73,8 +78,20 @@ def predicate_synonimization(sentence, verbs_map):
 def main(file_type, text, concepts_to_find, verbal_map):
     import codecs    
     list_to_check = []
-    for el in concepts_to_find:
-        list_to_check.extend([k for k ,v in defined_concepts.items() if v[1] == el])
+    try:
+        obj_to_find = [subtopic for subtopic in topics[concepts_to_find[0]].keys()]
+        obj_to_find.append(concepts_to_find[0])
+    except Exception, e:
+        obj_to_find = [concepts_to_find[0]]
+
+    try:
+        subj_to_find = [subtopic for subtopic in topics[concepts_to_find[1]].keys()]
+        subj_to_find.append(concepts_to_find[1])
+    except Exception, e:
+        subj_to_find = [concepts_to_find[1]]
+
+    list_to_check = list(set(obj_to_find + subj_to_find))
+
     dict_to_check = dict([(l.encode('utf-8'), 1) for l in list_to_check])
     indicator = {'occurrence_of_s_or_o': 0.0, 
                 'occurrence_of_s_and_o': 0.0,
@@ -82,7 +99,11 @@ def main(file_type, text, concepts_to_find, verbal_map):
 
     tag_list = get_terms_from_string(text, dict_to_check)
 
-    if len(set([defined_concepts[l.value][1] for l in tag_list])) < 2:
+    # TODO: Might be changed later to check if it is of any of the issues
+    obj_representatives = [l.value for l in tag_list if l.value in obj_to_find]
+    subj_representatives = [l.value for l in tag_list if l.value in subj_to_find]
+    if len(obj_representatives) == 0 or len(subj_representatives) == 0:
+    # if len(set([defined_concepts[l.value][1] for l in tag_list if l.value in topics[concepts_to_find[0]].keys() ] )) < 2:
         return indicator
 
     dot_list = detect_sentences(text)
@@ -92,13 +113,20 @@ def main(file_type, text, concepts_to_find, verbal_map):
         tag_tuple_list.append(('.', el, el + 1))
     sorted_tag_list = sorted(tag_tuple_list, key=lambda x: x[1])
 
+    #TODO: Fix the syn into the other list - for a syn have a [list]
     sorted_tag_list_syn = []
     for el in sorted_tag_list:
         if el[0] != ".":
             try:
-                sorted_tag_list_syn.append( (defined_concepts[el[0]][1], el[1], el[2]) )
+                if el[0] in concepts_to_find:
+                    sorted_tag_list_syn.append(el)
+                elif el[0] in obj_representatives:
+                    sorted_tag_list_syn.append( (concepts_to_find[0], el[1], el[2], el[0]) )
+                else:
+                    sorted_tag_list_syn.append( (concepts_to_find[1], el[1], el[2], el[0]) )
+                # sorted_tag_list_syn.append( (defined_concepts[el[0]][1], el[1], el[2]) )
             except Exception, e:
-                return indicator
+                continue
         else:
             sorted_tag_list_syn.append(el)
 
@@ -119,24 +147,48 @@ def main(file_type, text, concepts_to_find, verbal_map):
             sen = ""
             # if we are in the middle of the array
             if i < k - 1 and k < num_elems:
+                count_hash_mention = 0
                 if file_type == "tweet":
-                    count_hash_mention = sum([1 for el in sorted_tag_list_syn[i+1:k] if (text[el[1]-1] == "#" or text[el[1]-1] == "@")])
+                    count_hash_mention_ = [el for el in sorted_tag_list_syn[i+1:k] if (text[el[1]-1] == "#" or text[el[1]-1] == "@")]
+                    for el in count_hash_mention_:
+                        if len(el) == 3:
+                            count_hash_mention += 1
+                            continue
+                        elif len(el) > 3:
+                            if el[3] in obj_representatives:
+                                count_hash_mention += topics[concepts_to_find[0]][el[3]][0]
+                            else:
+                                count_hash_mention += topics[concepts_to_find[1]][el[3]][0]
                     # print "added count for hashes", count_hash_mention
-                else:
-                    count_hash_mention = 0
+                count_mention_ = [el for el in sorted_tag_list_syn[i+1:k] ]
+                if len(count_mention_) < 2:
+                    return indicator
                 count_with_sentence_with_conceps += k - 1 - i + count_hash_mention
                 # print "overall count added", k - 1 - i + count_hash_mention
-                if i < k - 2 and len(set([defined_concepts[l[0]][1] for l in sorted_tag_list_syn[i+1:k]])) > 1:
-                    count_with_sentence_with_both_conceps += 1
-                    # print "added cound for having two concpets in a sentence", 1
+                if i < k - 2 and len(set([l[0] for l in sorted_tag_list_syn[i+1:k]])) > 1:
+                    for el in count_mention_:
+                        if len(el) == 3:
+                            count_with_sentence_with_both_conceps += 1
+                            continue
+                        if len(el) > 3:
+                            if el[3] in obj_representatives:
+                                try:
+                                    count_with_sentence_with_both_conceps += topics[concepts_to_find[0]][el[3]][0]
+                                except Exception, e:
+                                    continue
+                            else:
+                                try:
+                                    count_with_sentence_with_both_conceps += topics[concepts_to_find[1]][el[3]][0]
+                                except Exception, e:
+                                    continue
                     index = 0 if i < 0 else sorted_tag_list_syn[i][2] + 1
                     sen = text[index:sorted_tag_list_syn[k][2]]
                     predicates = predicate_synonimization(sen, verbal_map)
-                    for pred in predicates:
-                        if pred in concepts_to_find[2]:
-                            count_with_sentence_with_both_conceps_predicate += 1
-                            break
-                        # print "added count for predicates", 1
+                    if sum([1 for el in sorted_tag_list_syn[i+1:k] if len(el) == 3]) > 1:
+                        for pred in predicates:
+                            if pred in concepts_to_find[2]:
+                                count_with_sentence_with_both_conceps_predicate += 1
+                                break
             i = k
 
     indicator['occurrence_of_s_or_o'] = float(count_with_sentence_with_conceps) / num_of_sentence

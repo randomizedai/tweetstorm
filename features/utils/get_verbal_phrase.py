@@ -30,7 +30,11 @@ def parse_triplets(id_parse_trees, labels_map, concepts_to_find=['water', 'droug
 		print "Have", len(results), "Sentence matches"
 		print "For concepts:", concepts_to_find[0], 'and', concepts_to_find[1]
 	for el in results:
-		print el[0][1].getTextOfNotTagOnly('N')
+		words_between = el[0][1].getText().split(el[0][2].getText())[0].rstrip()
+		if len(words_between.split(" ")) > 5:
+			print el[0][1].getTextOfNotTagOnly('N')
+		else:
+			print words_between
 	return results
 
 def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug):
@@ -43,36 +47,36 @@ def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, d
 			v = json.loads(row)
 			k = v['id_str']
 			text = v['text']
-			if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size > 0:
-				parse_file(parse_trees_path + k, text, parser_path)
+			if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0:
+				parse_fileTextBlob(parse_trees_path + k, text, parser_path)
 			id_parse_tree[k] = parse_trees_path + k + '.parse_tree'
 			# id_parse_tree[k] = open(parse_trees_path + k + '.parse_tree', 'r').read()
 		return id_parse_tree
 
 	elif file_type == 'news':
 		id_parse_tree = {}
-		# articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&full_text=1&page_size=100", "http://146.148.70.53/documents/", (0, num_pages))
-		import json
-		articles = json.loads( open('art.json', 'r').read() )
+		articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&full_text=1&page_size=100", "http://146.148.70.53/documents/", (0, num_pages))
+		# import json
+		# articles = json.loads( open('art.json', 'r').read() )
 		# TODO: Add futures
 		for k, v in articles.items():
 			text = v['title'] + '\n' + v['body']
-			if not os.path.exists(parse_trees_path + k + '.parse_tree'):
+			if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0:
 				if debug:
 					print "Processing file with parser"
-				parse_file(parse_trees_path + k, text, parser_path)
+				parse_fileTextBlob(parse_trees_path + k, text, parser_path)
 			id_parse_tree[str(k)] = parse_trees_path + k + '.parse_tree'
 			# id_parse_tree[str(k)] = open(parse_trees_path + k + '.parse_tree', 'r').read()
 		return id_parse_tree
 
 	elif file_type == 'scientific':
 		id_parse_tree = {}
-		articles = articles_to_map("http://146.148.70.53/documents/list/?type=scientific&full_text=1&page_size=100", "http://146.148.70.53/documents/", (0, num_pages))
+		articles = articles_to_map("http://146.148.70.53/documents/list/?type=scientific&full_text=1&page_size=10", "http://146.148.70.53/documents/", (0, num_pages))
 		# TODO: Add futures
 		for k, v in articles.items():
 			text = v['title'] + '\n' + v['body']
-			if not os.path.exists(parse_trees_path + k + '.parse_tree'):
-				parse_file(parse_trees_path + k, text, parser_path)
+			if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0:
+				parse_fileTextBlob(parse_trees_path + k, text, parser_path)
 			id_parse_tree[str(k)] = parse_trees_path + k + '.parse_tree'
 			# id_parse_tree[str(k)] = open(parse_trees_path + k + '.parse_tree', 'r').read()
 		return id_parse_tree
@@ -112,8 +116,8 @@ if __name__ == "__main__":
 	debug = 1
 	file_type = 'news'
 	file_path = 'articles/s00114-011-0762-7.txt'
-	concepta = 'sea level rise'
-	conceptb = 'climate change'
+	concepta = 'climate change'
+	conceptb = 'GHG emission'
 	parser_path = "/vagrant/stanford-parser-2012-11-12/lexparser.sh"
 	argv = sys.argv[1:]
 	try:
@@ -144,7 +148,3 @@ if __name__ == "__main__":
 	id_parse_trees = get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug)
 	print id_parse_trees
 	triplets = parse_triplets(id_parse_trees=id_parse_trees, labels_map=labels_map, concepts_to_find=[concepta, conceptb], parser_path=parser_path, debug=debug)
-
-
-
-

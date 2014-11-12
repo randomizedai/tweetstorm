@@ -1,7 +1,6 @@
 import sys
 sys.path.append(".")
 sys.path.append("/opt/texpp")
-from article_to_issue import *
 from outputVerbalPhrase import * 
 
 class ConceptOccurrence:
@@ -218,12 +217,12 @@ def read_topic_to_json_from_dir(directory):
 					child.parents.append(n)
 					hierarchy[child.norm_name] = child
 					n.children.append(child)
-					map_[k] = [v[1], k, counter]
+					map_[k] = [v[1], topic_norm_name, counter]
 	return map_, hierarchy, topics
 
 #path: http://146.148.70.53/topics/list/
 def read_topic_to_json_from_db(path):
-	import time
+	import time, json
 	topics = {}
 	map_ = {}
 	counter = 0
@@ -264,7 +263,7 @@ def read_topic_to_json_from_db(path):
 						child.parents.append(n)
 						hierarchy[child.norm_name] = child
 						n.children.append(child)
-						map_[k] = [v[1], k, p['id']]
+						map_[k] = [v[1], topic_norm_name, p['id']]
 		next = page['next']
 	return map_, hierarchy, topics
 

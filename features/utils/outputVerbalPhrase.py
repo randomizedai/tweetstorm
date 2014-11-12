@@ -3,7 +3,7 @@ import os
 # NOTE: We need to have get_parse_tree file in the code folder
 sys.path.append(".")
 sys.path.append("/opt/texpp")
-from get_parse_tree import parse_file, preprocessText
+from get_parse_tree import parse_fileTextBlob, preprocessText
 import parsetreenode
 from _chrefliterals import WordsDict, findLiterals, TextTag, TextTagList, normLiteral
 
@@ -216,6 +216,8 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
 
         if debug:
             print "--------------"
+            print sentence
+            print "Looking for: ", temp_literals
             print tag_tuple_list
             print tag_tuple_list_syn
         if len(set([l[0] for l in tag_tuple_list_syn])) != 2:
