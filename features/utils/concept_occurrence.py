@@ -1,7 +1,6 @@
 import sys
 sys.path.append(".")
 sys.path.append("/opt/texpp")
-from article_to_issue import *
 from outputVerbalPhrase import * 
 
 class ConceptOccurrence:
@@ -23,11 +22,43 @@ class ConceptOccurrence:
 			res['preprocessed'] = self.preprocessed
 			res['occurrence_map'] = sorted([(k, v) for k,v in self.occurrence_map.items()], key=lambda x:x[1], reverse=True)
 			topics_scores = self.compute_hierarchy_scores_for_labels(hierarchy, topics)
+			topics_hierarchy_score = self.compute_score_for_manual_topics_hierarcy(topics_scores)
 			if topics_scores:
 				res['labels'] = sorted([(k, v) for k,v in topics_scores.items()], key=lambda x:x[1], reverse=True)
 			else:
 				res['labels'] = []
+			if topics_hierarchy_score:
+				res['hierarchy_labels'] = sorted([(k, v) for k, v in topics_hierarchy_score.items() if v > 0], key=lambda x:x[1], reverse=True)
+			else:
+				res['hierarchy_labels'] = []
 		return res
+
+
+	def compute_score_for_manual_topics_hierarcy(self, topics_scores):
+		import json, os
+		path = os.path.dirname(os.path.realpath(__file__)) + "/../../data/topics_hierarchy.json"
+		manual_hierarchy = json.loads( open(path, 'r').read() )
+		queue = []
+		manual_weights = {}
+		for k, v in manual_hierarchy.items():
+			queue.append((k, v))
+		while queue:
+			k, v = queue.pop(0)
+			k_norm = norm_literal(k)
+			manual_weights[k] = topics_scores[k_norm] if (k_norm in topics_scores and topics_scores[k_norm] > 0) else 0
+			for listofchildren in v:
+				k_v = listofchildren.keys()[0]
+				v_v = listofchildren.values()[0]
+				k_v_norm = norm_literal(k_v)
+				if k_v_norm in topics_scores:
+					manual_weights[k] += topics_scores[k_v_norm]
+				if not v_v:
+					if k_v_norm in topics_scores:
+						manual_weights[k_v] = topics_scores[k_v_norm]
+				else:
+					queue.append((k_v, v_v))
+		return manual_weights
+
 
 	def walkBfs(self, curr_node, topics, hierarchy):
 		# TODO: use hierarchy to access the nodes
@@ -59,6 +90,8 @@ class ConceptOccurrence:
 		for k, v in self.occurrence_map.items():
 			curr_node = hir[k]
 			for parent in curr_node.parents:
+				if parent.norm_name not in topics or curr_node.norm_name not in topics[parent.norm_name]:
+					continue
 				parent = hir[parent.norm_name]
 				parent.accumulated += curr_node.occurrence
 				parent.weighted += curr_node.occurrence * topics[parent.norm_name][curr_node.norm_name][0]
@@ -157,11 +190,12 @@ def read_topic_to_json_from_dir(directory):
 		topic_name = basename(filename).split("__")[1].replace("_"," ")
 		topic_norm_name = norm_literal(topic_name)
 		topics[topic_norm_name] = {}
+		divide_by = 1
 		for i, row in enumerate(open(filename, 'r').readlines()):
-			if i == 0:
-				divide_by = float( row.split(" ")[1].strip() )
-				if divide_by <= 1:
-					divide_by = 1
+			# if i == 0:
+			# 	divide_by = float( row.split(" ")[1].strip() )
+			# 	if divide_by <= 1:
+			# 		divide_by = 1
 			child_name = row.split(" ")[0].replace("_"," ")
 			topics[topic_norm_name][norm_literal(child_name)] = [float(row.split(" ")[1].strip() ) / divide_by, child_name]
 		map_[topic_norm_name] = [topic_name, topic_norm_name, counter]
@@ -183,18 +217,33 @@ def read_topic_to_json_from_dir(directory):
 					child.parents.append(n)
 					hierarchy[child.norm_name] = child
 					n.children.append(child)
-					map_[k] = [v[1], k, counter]
+					map_[k] = [v[1], topic_norm_name, counter]
 	return map_, hierarchy, topics
 
 #path: http://146.148.70.53/topics/list/
-def read_topic_to_json_from_db(path):
+def read_topic_to_json_from_db(path, dir_maps='../../data/'):
+	import time, datetime, json, urllib2, pickle
+	label_json = dir_maps + 'labels_map.json'
+	topic_json = dir_maps + 'topics.json'
+	hierarchy_pickle = dir_maps + 'hierarcy.pickle'
+	if os.path.exists(label_json) and os.path.exists(topic_json) and os.path.exists(hierarchy_pickle):
+		time_since = datetime.datetime.now() - datetime.datetime.fromtimestamp(os.stat(label_json).st_mtime)
+		if time_since.days == 0:
+			map_ = json.loads(open(label_json, 'r').read())
+			hierarchy = pickle.loads(open(hierarchy_pickle, 'r').read())
+			topics = json.loads(open(topic_json, 'r').read())
+			return map_, hierarchy, topics
 	topics = {}
 	map_ = {}
 	counter = 0
 	hierarchy = {}
 	next = path
 	while next:
-		page = json.load(urllib2.urlopen(next))
+		try:
+			page = json.load(urllib2.urlopen(next))
+		except Exception, e:
+			time.sleep(10)
+			return read_topic_to_json_from_db(path)
 		# for each topic
 		for p in page['results']:
 			topic_name = p['name']
@@ -202,8 +251,8 @@ def read_topic_to_json_from_db(path):
 			topics[topic_norm_name] = {}
 			for i, con in enumerate(p['concepts']):
 				if i == 0:
-					divide_by = float( con['weight'] )
-					if divide_by <= 1:
+					divide_by = float( con['weight'] ) 
+					if divide_by == 0:
 						divide_by = 1
 				topics[topic_norm_name][norm_literal(con['name'])] = [ float(con['weight']) / divide_by, con['name']]
 			map_[topic_norm_name] = [topic_name, topic_norm_name, p['id']]
@@ -224,8 +273,13 @@ def read_topic_to_json_from_db(path):
 						child.parents.append(n)
 						hierarchy[child.norm_name] = child
 						n.children.append(child)
-						map_[k] = [v[1], k, p['id']]
+						map_[k] = [v[1], topic_norm_name, p['id']]
 		next = page['next']
+	m = json.dumps(map_)
+	t = json.dumps(topics)
+	open(label_json, 'w').write(m)
+	open(hierarchy_pickle, 'w').write(pickle.dumps(hierarchy))
+	open(topic_json, 'w').write(t)
 	return map_, hierarchy, topics
 
 def read_from_multiple_files(directory):
@@ -237,22 +291,24 @@ def read_from_multiple_files(directory):
 			tweets[tweet['url']] = {'text' : tweet['content']}
 	return tweets
 
-def articles_to_map(path_list, path, pages=((0,10))):
+def articles_to_map(path_list, path, pages=(0,10) ):
 	articles = {}
 	next = path_list
-	counter = pages[0] - 1
+	counter = pages[0]
 	if len(pages) == 0:
-		pages = [0, json.load(urllib2.urlopen(next))["count"]]
+		pages = [0, int(json.load(urllib2.urlopen(next))["count"]/100)]
 	while next and counter < pages[1]:
 		try:
 			page = json.load(urllib2.urlopen(next))
-			if counter >= pages[0]:
-				for p in page['results']:
-					doc_text = p['plain_text']
-					identifier = p['id']
-					articles[str(identifier)] = {'title': p['title'], 'body' : doc_text}
+			if counter == 0:
+				print "Count: ", page['count']
 		except Exception, e:
-			return articles
+			return articles_to_map(path_list, path, pages=(counter,pages[1]) )
+		if counter >= pages[0]:
+			for p in page['results']:
+				doc_text = p['plain_text']
+				identifier = p['id']
+				articles[str(identifier)] = {'title': p['title'], 'body' : doc_text}
 		counter += 1
 		next = page['next']
 	return articles

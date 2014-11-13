@@ -5,6 +5,7 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(BASE_DIR + '/utils/')
 from concept_occurrence import *
 import time
+sys.setrecursionlimit(10000)
 
 argv = sys.argv[1:]
 try:
@@ -29,17 +30,18 @@ docs_occurrence = {}
 # TODO: be able to read hierarchy in any order
 hierarchy = {} #json.loads(open(BASE_DIR + '/../../data/hierarchy_for_topics.json', 'r').read())
 # labels_map, hierarchy, topics = read_topic_to_json_from_dir(BASE_DIR + '/../../data/topics/')
-labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53/topics/list/')
+labels_map, hierarchy, topics = read_topic_to_json_from_db(path='http://146.148.70.53/topics/list/?page_size=1000&concepts=1', dir_maps=BASE_DIR+'/../data/')
 # labels_map = json.loads(open(BASE_DIR + '/../../data/top_concepts.json', 'r').read()) # concepts_with_synonyms.concepts_for_topics.json
 # Labels that are used to construct the docs -> terms vectors
 # general_concepts_map is additionally enriched with occurrence of the concepts from the labels_map
 general_concepts_map = {} # load_csv_terms(BASE_DIR + '/../../data/amitlist.csv') # 1_climate_keyphrases_aggr_filtered_844
 
+manual_hierarchy_map = json.loads( open(BASE_DIR + '/../data/topic_hierarchy_map.json', 'r').read() )
+
 if file_type == "twitter":
 	# tweets = tweets_to_map("http://146.148.70.53/tweets/list/", "http://146.148.70.53/tweets/", num_pages)
 	# directory = BASE_DIR + "/../../data/julia_llda/"
 	# tweets = read_from_multiple_files(directory)
-
 	for row in sys.stdin:
 		v = json.loads(row)
 		k = v['id_str']
@@ -48,11 +50,20 @@ if file_type == "twitter":
 		occurrence.get_occurrence_count(labels_map, hierarchy, general_concepts_map)
 		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics)
 
+	# for k, v in docs_occurrence.items():
+	# 	if 'labels' in v:
+	# 		scores = []
+	# 		for pairs in v['labels']:
+	# 			scores.append([ labels_map[pairs[0]][2], pairs[1] ])
+	# 		if scores:
+	# 			print json.dumps({k : scores})
+
 	for k, v in docs_occurrence.items():
-		if 'labels' in v:
+		if 'hierarchy_labels' in v:
 			scores = []
-			for pairs in v['labels']:
-				scores.append([ labels_map[pairs[0]][2], pairs[1] ])
+			for pairs in v['hierarchy_labels']:
+				if pairs[0] in manual_hierarchy_map:
+					scores.append([ manual_hierarchy_map[pairs[0]], pairs[1] ])
 			if scores:
 				print json.dumps({k : scores})
 
@@ -69,7 +80,7 @@ if file_type == "twitter":
 	# print("\n".join([json.dumps({k:v['topics']}) for k, v in document_topic_relevance.items()]))
 
 elif file_type == "news":
-	articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&full_text=1&page_size=10", "http://146.148.70.53/documents/", num_pages)
+	articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&full_text=1&page_size=100", "http://146.148.70.53/documents/", num_pages)
 	for k, v in articles.items():
 		occurrence = ConceptOccurrence(v['body'], file_type)
 		occurrence.title = v['title']
@@ -105,12 +116,22 @@ if file_type != 'twitter':
 
 	sc = []
 	for k, v in docs_occurrence.items():
-		if 'labels' in v:
+		if 'hierarchy_labels' in v:
 			scores = []
-			for pairs in v['labels']:
-				scores.append([ labels_map[pairs[0]][2], pairs[1] ])
+			for pairs in v['hierarchy_labels']:
+				if pairs[0] in manual_hierarchy_map:
+					scores.append([ manual_hierarchy_map[pairs[0]], pairs[1] ])
 			if scores:
 				sc.append(json.dumps({k : scores}))
+
+	# sc = []
+	# for k, v in docs_occurrence.items():
+	# 	if 'labels' in v:
+	# 		scores = []
+	# 		for pairs in v['labels']:
+	# 			scores.append([ labels_map[pairs[0]][2], pairs[1] ])
+	# 		if scores:
+	# 			sc.append(json.dumps({k : scores}))
 
 	# print ("\n".join([el for el in sc]))
 	open(d + file_type + "_" + "_".join([str(num_pages[0]), str(num_pages[1])]) + '.json', 'w').write("\n".join([el for el in sc]))
