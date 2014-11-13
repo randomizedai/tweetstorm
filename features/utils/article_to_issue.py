@@ -9,12 +9,12 @@ from concept_occurrence import *
 from outputVerbalPhrase import norm_literal, get_terms_from_string, get_stopwords
 from _chrefliterals import WordsDict, findLiterals, TextTag, TextTagList, normLiteral
 
-BASE_DIR = '/vagrant/julia/VerbalPhraseDetection/tweetstorm/features/utils'
-# os.path.dirname(os.path.realpath(__file__))
+BASE_DIR = os.path.dirname(os.path.realpath(__file__))
+# BASE_DIR = '/vagrant/julia/VerbalPhraseDetection/tweetstorm/features/utils'
 
 # TODO: Should be different defined concpets!!!
 # defined_concepts = json.loads(open(BASE_DIR + "/../../data/concepts_with_synonyms.json",'r').read())
-labels_map, hierarchy, topics = read_topic_to_json_from_db('http://146.148.70.53/topics/list/?page_size=100&concepts=1')
+labels_map, hierarchy, topics = read_topic_to_json_from_db(path='http://146.148.70.53/topics/list/?page_size=100&concepts=1', dir_maps=BASE_DIR+'/../../data/')
 # labels_map = json.loads(open('utils/lab.json', 'r').read())
 # topics = json.loads(open('utils/top.json', 'r').read())
 issues = "http://146.148.70.53/issues/list/?format=json"

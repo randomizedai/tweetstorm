@@ -221,8 +221,18 @@ def read_topic_to_json_from_dir(directory):
 	return map_, hierarchy, topics
 
 #path: http://146.148.70.53/topics/list/
-def read_topic_to_json_from_db(path):
-	import time, json
+def read_topic_to_json_from_db(path, dir_maps='../../data/'):
+	import time, datetime, json, urllib2, pickle
+	label_json = dir_maps + 'labels_map.json'
+	topic_json = dir_maps + 'topics.json'
+	hierarchy_pickle = dir_maps + 'hierarcy.pickle'
+	if os.path.exists(label_json) and os.path.exists(topic_json) and os.path.exists(hierarchy_pickle):
+		time_since = datetime.datetime.now() - datetime.datetime.fromtimestamp(os.stat(label_json).st_mtime)
+		if time_since.days == 0:
+			map_ = json.loads(open(label_json, 'r').read())
+			hierarchy = pickle.loads(open(hierarchy_pickle, 'r').read())
+			topics = json.loads(open(topic_json, 'r').read())
+			return map_, hierarchy, topics
 	topics = {}
 	map_ = {}
 	counter = 0
@@ -265,6 +275,11 @@ def read_topic_to_json_from_db(path):
 						n.children.append(child)
 						map_[k] = [v[1], topic_norm_name, p['id']]
 		next = page['next']
+	m = json.dumps(map_)
+	t = json.dumps(topics)
+	open(label_json, 'w').write(m)
+	open(hierarchy_pickle, 'w').write(pickle.dumps(hierarchy))
+	open(topic_json, 'w').write(t)
 	return map_, hierarchy, topics
 
 def read_from_multiple_files(directory):
