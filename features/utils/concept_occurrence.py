@@ -292,6 +292,7 @@ def read_from_multiple_files(directory):
 	return tweets
 
 def articles_to_map(path_list, path, pages=(0,10) ):
+	import json, urllib2
 	articles = {}
 	next = path_list
 	counter = pages[0]
