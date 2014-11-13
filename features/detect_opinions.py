@@ -162,12 +162,12 @@ for row in sys.stdin:
         clean_text = clean_tweet(text)
         opinions = tweet_opinions(clean_text)
         issue_done = {}
-        if opinions:
-            print tweet['id_str'] + "," +clean_text
+        #if opinions:
+        #    print tweet['id_str'] + "," +clean_text
         for k,v in opinions:
             if k not in issue_done:
                 issue_id,issue_dir = issues_dict[k]
-                print "===>>>" + str(tweet['id_str']) + ","+ str(issue_id) + "," + str(v*issue_dir ) + "," + k
+                print  str(tweet['id_str']) + ","+ str(issue_id) + "," + str(v*issue_dir )
                 issue_done[k] = 1    
                 
     #except:
