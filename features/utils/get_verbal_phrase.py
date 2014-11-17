@@ -5,6 +5,7 @@ sys.path.append("/opt/texpp")
 from outputVerbalPhrase import * 
 from concept_occurrence import *
 
+import json
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 labels_map = json.loads(open(BASE_DIR + '/../../data/concepts_with_synonyms.json', 'r').read()) # concepts_with_synonyms.concepts_for_topics.json
 
@@ -113,7 +114,7 @@ if __name__ == "__main__":
 	import sys, getopt
 	num_threads = 1
 	num_pages = 1
-	debug = 1
+	debug = 0
 	file_type = 'news'
 	file_path = 'articles/s00114-011-0762-7.txt'
 	concepta = 'climate change'
