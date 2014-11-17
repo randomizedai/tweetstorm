@@ -14,7 +14,6 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 
 # TODO: Should be different defined concpets!!!
 # defined_concepts = json.loads(open(BASE_DIR + "/../../data/concepts_with_synonyms.json",'r').read())
-labels_map, hierarchy, topics = read_topic_to_json_from_db(path='http://146.148.70.53/topics/list/?page_size=100&concepts=1', dir_maps=BASE_DIR+'/../../data/')
 # labels_map = json.loads(open('utils/lab.json', 'r').read())
 # topics = json.loads(open('utils/top.json', 'r').read())
 issues = "http://146.148.70.53/issues/list/?format=json"
@@ -77,6 +76,7 @@ def predicate_synonimization(sentence, verbs_map):
 
 def main(file_type, text, concepts_to_find, verbal_map):
     import codecs    
+    labels_map, hierarchy, topics = read_topic_to_json_from_db(path='http://146.148.70.53/topics/list/?page_size=100&concepts=1', dir_maps=BASE_DIR+'/../../data/')
     list_to_check = []
     try:
         obj_to_find = [subtopic for subtopic in topics[concepts_to_find[0]].keys()]

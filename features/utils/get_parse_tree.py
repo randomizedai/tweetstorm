@@ -86,7 +86,6 @@ def parse_fileTextBlob(location, text=None, path_to_parser="/home/iuliia.proskur
                 try:
                     fh.write(preprocessed)
                 except:
-                    print preprocessed
                     break
                 fh.flush()
                 fh.seek(0)
