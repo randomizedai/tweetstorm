@@ -47,18 +47,19 @@ for opt, arg in opts:
         issue_term_representation = 1
 
 verbal_map = read_verbal_ontology(BASE_DIR + "/../../data/")
+labels_map, hierarchy, topics = read_topic_to_json_from_db(path='http://146.148.70.53/topics/list/?page_size=1000&concepts=1', dir_maps=BASE_DIR+'/../../data/')
 result = {}
 triplets = issues_to_map(issues)
 if file_type == 'tweet':
     # text should be in format of json to load tweet
     if text == None:
         for row in sys.stdin:
-            indicator = get_indicator_body_title_abstact(file_path, file_type, row, title, abstract, verbal_map, triplets)
+            indicator = get_indicator_body_title_abstact(file_path, file_type, row, title, abstract, verbal_map, triplets, labels_map, hierarchy, topics)
             if indicator is None:
                 continue
             result.update(indicator)
     else:
-        indicator = get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map, triplets)
+        indicator = get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map, triplets, labels_map, hierarchy, topics)
         if indicator is not None:
             result.update()
     print ("\n".join([json.dumps({k:v}) for k, v in result.items()]))
@@ -73,7 +74,7 @@ elif file_type == 'news':
         title = v['title']
         doc_id = str(k)
         # if given a json with metadata then use id as file_path
-        indicator = get_indicator_body_title_abstact(doc_id, file_type, text, title, abstract, verbal_map, triplets)
+        indicator = get_indicator_body_title_abstact(doc_id, file_type, text, title, abstract, verbal_map, triplets, labels_map, hierarchy, topics)
         if indicator is None:
             continue
         result.update(indicator)
@@ -117,7 +118,7 @@ elif file_type == 'scientific':
         title = v['title']
         doc_id = str(k)
         # if given a json with metadata then use id as file_path
-        indicator = get_indicator_body_title_abstact(doc_id, file_type, text, title, abstract, verbal_map, triplets)
+        indicator = get_indicator_body_title_abstact(doc_id, file_type, text, title, abstract, verbal_map, triplets, labels_map, hierarchy, topics)
         if indicator is None:
             continue
         result.update(indicator)

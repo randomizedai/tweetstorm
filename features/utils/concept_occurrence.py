@@ -230,8 +230,8 @@ def read_topic_to_json_from_db(path, dir_maps='../../data/'):
 		time_since = datetime.datetime.now() - datetime.datetime.fromtimestamp(os.stat(label_json).st_mtime)
 		if time_since.days == 0:
 			map_ = json.loads(open(label_json, 'r').read())
-			hierarchy = pickle.loads(open(hierarchy_pickle, 'r').read())
 			topics = json.loads(open(topic_json, 'r').read())
+			hierarchy = pickle.loads(open(hierarchy_pickle, 'r').read())
 			return map_, hierarchy, topics
 	topics = {}
 	map_ = {}
@@ -278,9 +278,9 @@ def read_topic_to_json_from_db(path, dir_maps='../../data/'):
 	m = json.dumps(map_)
 	t = json.dumps(topics)
 	open(label_json, 'w').write(m)
+	open(topic_json, 'w').write(t)
 	sys.setrecursionlimit(10000)
 	open(hierarchy_pickle, 'w').write(pickle.dumps(hierarchy))
-	open(topic_json, 'w').write(t)
 	return map_, hierarchy, topics
 
 def read_from_multiple_files(directory):

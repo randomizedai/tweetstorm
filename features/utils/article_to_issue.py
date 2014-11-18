@@ -74,9 +74,8 @@ def predicate_synonimization(sentence, verbs_map):
                 break
     return list(set([l for l in predicate_set]))
 
-def main(file_type, text, concepts_to_find, verbal_map):
+def main(file_type, text, concepts_to_find, verbal_map, labels_map, hierarchy, topics):
     import codecs    
-    labels_map, hierarchy, topics = read_topic_to_json_from_db(path='http://146.148.70.53/topics/list/?page_size=100&concepts=1', dir_maps=BASE_DIR+'/../../data/')
     list_to_check = []
     try:
         obj_to_find = [subtopic for subtopic in topics[concepts_to_find[0]].keys()]
@@ -197,20 +196,20 @@ def main(file_type, text, concepts_to_find, verbal_map):
 
     return indicator
 
-def compute_indicators_inner(file_type, text, title, abstract, id_element, verbal_map, triplets):
+def compute_indicators_inner(file_type, text, title, abstract, id_element, verbal_map, triplets, labels_map, hierarchy, topics):
     total_score = 1 #sum([v for k, v in weight.iteritems()])
     res_ = {}
     res_[id_element] = []
     for key, value in triplets.items():
-        indicator_body = main(file_type = file_type, text=text, concepts_to_find=value, verbal_map=verbal_map)
+        indicator_body = main(file_type = file_type, text=text, concepts_to_find=value, verbal_map=verbal_map, labels_map=labels_map, hierarchy=hierarchy, topics=topics)
         index_body = sum([weight[k] * v for k, v in indicator_body.iteritems()]) / total_score
         index_title = 0.0
         index_abstract = 0.0
         if title:
-            indicator_title = main(file_type = file_type, text=title, concepts_to_find=value, verbal_map=verbal_map)
+            indicator_title = main(file_type = file_type, text=title, concepts_to_find=value, verbal_map=verbal_map, labels_map=labels_map, hierarchy=hierarchy, topics=topics)
             index_title = sum([weight[k] * v for k, v in indicator_title.iteritems()]) / total_score
         if abstract:
-            indicator_abstract = main(file_type = file_type, text=abstract, concepts_to_find=value, verbal_map=verbal_map)
+            indicator_abstract = main(file_type = file_type, text=abstract, concepts_to_find=value, verbal_map=verbal_map, labels_map=labels_map, hierarchy=hierarchy, topics=topics)
             index_abstract = sum([weight[k] * v for k, v in indicator_abstract.iteritems()]) / total_score
         index = weight['index_body'] * index_body \
               + weight['index_title'] * index_title \
@@ -236,7 +235,7 @@ def issues_to_map(path):
     return triplets
 
         
-def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map, triplets):
+def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract, verbal_map, triplets, labels_map, hierarchy, topics):
     import json
     res_ = {}
     tweet_id_text = {}
@@ -259,7 +258,10 @@ def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract
         abstract=abstract, 
         id_element=id_element, 
         verbal_map=verbal_map, 
-        triplets=triplets)
+        triplets=triplets,
+        labels_map=labels_map, 
+        hierarchy=hierarchy, 
+        topics=topics)
 
     # json_output = json.dumps(res_, indent = 4)
     # # Add time to the file name
