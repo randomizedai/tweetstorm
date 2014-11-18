@@ -3,7 +3,7 @@ Created on Aug 9, 2014
 
 @author: Amit
 '''
-from util import *
+from utils import *
 from database import *
 from filesystem import *
 from datetime import datetime
