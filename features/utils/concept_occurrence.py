@@ -222,7 +222,7 @@ def read_topic_to_json_from_dir(directory):
 
 #path: http://146.148.70.53/topics/list/
 def read_topic_to_json_from_db(path, dir_maps='../../data/'):
-	import time, datetime, json, urllib2, pickle
+	import time, datetime, json, urllib2, pickle, sys
 	label_json = dir_maps + 'labels_map.json'
 	topic_json = dir_maps + 'topics.json'
 	hierarchy_pickle = dir_maps + 'hierarcy.pickle'
@@ -278,6 +278,7 @@ def read_topic_to_json_from_db(path, dir_maps='../../data/'):
 	m = json.dumps(map_)
 	t = json.dumps(topics)
 	open(label_json, 'w').write(m)
+	sys.setrecursionlimit(10000)
 	open(hierarchy_pickle, 'w').write(pickle.dumps(hierarchy))
 	open(topic_json, 'w').write(t)
 	return map_, hierarchy, topics

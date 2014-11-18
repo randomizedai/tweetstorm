@@ -30,28 +30,52 @@ def parse_triplets(id_parse_trees, labels_map, concepts_to_find=['water', 'droug
 	if debug:
 		print "Have", len(results), "Sentence matches"
 		print "For concepts:", concepts_to_find[0], 'and', concepts_to_find[1]
+	statistics = {}
 	for el in results:
 		words_between = el[0][1].getText().split(el[0][2].getText())[0].rstrip()
 		if len(words_between.split(" ")) > 5:
-			print el[0][1].getTextOfNotTagOnly('N')
+			verbal = el[0][1].getTextOfNotTagOnly('N')
+			if verbal in statistics:
+				statistics[verbal] += 1
+			else:
+				statistics[verbal] = 1
+			# print verbal
 		else:
-			print words_between
+			if words_between in statistics:
+				statistics[words_between] += 1
+			else:
+				statistics[words_between] = 1
+			# print words_between
+	print sorted([(k, v) for k, v in statistics.items()], key=lambda x:x[1], reverse=True)
 	return results
 
 def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug):
 	parse_trees_path = BASE_DIR + '/../../data/parse_trees/'
 
+	futures_list = []
+	results = []
 	if file_type == 'twitter':
 		id_parse_tree = {}
-		# TODO: Add futures
-		for row in sys.stdin:
-			v = json.loads(row)
-			k = v['id_str']
-			text = v['text']
-			if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0:
-				parse_fileTextBlob(parse_trees_path + k, text, parser_path)
-			id_parse_tree[k] = parse_trees_path + k + '.parse_tree'
-			# id_parse_tree[k] = open(parse_trees_path + k + '.parse_tree', 'r').read()
+		with futures.ProcessPoolExecutor(max_workers=int(num_threads)) as executor:
+			for row in sys.stdin: #.readlines()[:120]:
+				v = json.loads(row)
+				k = v['id_str']
+				text = v['text']
+				if text.startswith('RT'):
+					continue
+				if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0:
+					futures_list.append(executor.submit(parse_fileTextBlob, parse_trees_path + k, text, parser_path, k))
+				else:
+					id_parse_tree[k] = parse_trees_path + k + '.parse_tree'
+			for future in futures_list:
+				future_result = future.result()
+				future_exception = future.exception()
+				if future_exception is not None:
+					print "!!! Future returned an exception:", future_exception
+				else:
+					if future_result:
+						id_parse_tree[future_result[0]] = future_result[1]
+				# id_parse_tree[k] = parse_trees_path + k + '.parse_tree'
 		return id_parse_tree
 
 	elif file_type == 'news':
@@ -65,7 +89,7 @@ def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, d
 			if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0:
 				if debug:
 					print "Processing file with parser"
-				parse_fileTextBlob(parse_trees_path + k, text, parser_path)
+				parse_fileTextBlob(parse_trees_path + k, text, parser_path, str(k))
 			id_parse_tree[str(k)] = parse_trees_path + k + '.parse_tree'
 			# id_parse_tree[str(k)] = open(parse_trees_path + k + '.parse_tree', 'r').read()
 		return id_parse_tree
@@ -77,7 +101,7 @@ def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, d
 		for k, v in articles.items():
 			text = v['title'] + '\n' + v['body']
 			if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0:
-				parse_fileTextBlob(parse_trees_path + k, text, parser_path)
+				parse_fileTextBlob(parse_trees_path + k, text, parser_path, str(k))
 			id_parse_tree[str(k)] = parse_trees_path + k + '.parse_tree'
 			# id_parse_tree[str(k)] = open(parse_trees_path + k + '.parse_tree', 'r').read()
 		return id_parse_tree
@@ -147,5 +171,4 @@ if __name__ == "__main__":
 			parser_path = arg
 
 	id_parse_trees = get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug)
-	print id_parse_trees
 	triplets = parse_triplets(id_parse_trees=id_parse_trees, labels_map=labels_map, concepts_to_find=[concepta, conceptb], parser_path=parser_path, debug=debug)

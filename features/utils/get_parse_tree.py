@@ -66,7 +66,7 @@ def main():
         parse_file(location.strip())
 
 
-def parse_fileTextBlob(location, text=None, path_to_parser="/home/iuliia.proskurnia/stanford-parser-2012-11-12/lexparser.sh"):
+def parse_fileTextBlob(location, text=None, path_to_parser="/home/iuliia.proskurnia/stanford-parser-2012-11-12/lexparser.sh", k=0):
     if text is None:
         with codecs.open(location, 'r', 'utf-8') as fh:
             text = fh.read()
@@ -92,7 +92,7 @@ def parse_fileTextBlob(location, text=None, path_to_parser="/home/iuliia.proskur
                 parse_tree = subprocess.Popen([path_to_parser, fh.name], stdout=subprocess.PIPE).stdout.read().decode("utf-8").encode('ascii', 'ignore')
             os.unlink(filename)
             f_parse_tree_out.write('%s%s%d_%d%s%s%s%s\n' % (location, separator, sentence.start_index, sentence.end_index, separator, sen, separator, parse_tree.replace('\n', ' ')))
-    return location + ".parse_tree"
+    return k, location + ".parse_tree"
         
 def parse_file(location, text=None, path_to_parser="/home/iuliia.proskurnia/stanford-parser-2012-11-12/lexparser.sh"):
     if text is None:
