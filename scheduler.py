@@ -13,7 +13,7 @@ def last_accessed_first(con,worker_id,debug=False):
     try:
         x= randint(0,100)
         if x < 30:
-            tweet_ids = get_manual_tweet_ids(con,worker_id,count=5000,debug)
+            tweet_ids = get_manual_tweet_ids(con,worker_id,count=5000,debug=debug)
             if debug:
                 print "taskid--" + str(worker_id) +" got manual tweets " + str(len(tweet_ids))
             if tweet_ids:
