@@ -288,7 +288,7 @@ def release_feature_machine_pair(con,worker_id,fm_id,debug=False):
 def remove_manual_tweets(con,worker_id,results,debug=False):
     ids = [x['id_str'] for x in results]
     stringv = "(\'" + "\',\'".join(ids) +"\')"
-    general_modify_query(con, worker_id, "delete from manual_tweets where id in "+stringv, debug=debug)
+    general_modify_query(con, worker_id, "delete from manual_tweets where tweet_id in "+stringv, debug=debug)
     
 
 def get_feature_machine_pair(con,worker_id,machine_id,debug=False):
