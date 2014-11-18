@@ -285,10 +285,10 @@ def release_feature_machine_pair(con,worker_id,fm_id,debug=False):
     update_table(con, worker_id, "features_machines", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : fm_id,"active_status" : worker_id}, debug)   
 
 
-def remove_manual_tweets(con,worker_id,results):
+def remove_manual_tweets(con,worker_id,results,debug=False):
     ids = [x['id_str'] for x in results]
     stringv = "(\'" + "\',\'".join(ids) +"\')"
-    general_modify_query(con, worker_id, "delete from manual_tweets where id in "+stringv, debug)
+    general_modify_query(con, worker_id, "delete from manual_tweets where id in "+stringv, debug=debug)
     
 
 def get_feature_machine_pair(con,worker_id,machine_id,debug=False):
@@ -354,13 +354,14 @@ def get_auth(con,worker_id,debug=False):
         print "taskid--" + str(worker_id) + "  In getting Auth -->" + auth_status
 
 
-def get_file(con,worker_id,download_dir,machine_name,date,hour,chunk_size,debug=False):
-    bool_dict = {"machine_name" : machine_name, "date_string" : date, "hour_string" : hour, "size<":chunk_size}
+def get_file(con,worker_id,query_type,download_dir,machine_name,date,hour,chunk_size,debug=False):
+    bool_dict = {"query_type":query_type,"machine_name" : machine_name, "date_string" : date, "hour_string" : hour, "size<":chunk_size}
     file_status,file_row = get_active_row(con,worker_id,"files",bool_dict,debug)
     if file_status != "success":
         value_dict = {}
         filename = "tweets_" + get_random_uuid()  + ".txt"
         value_dict["path"] = download_dir + "/" + date + "/" + hour + "/" + filename
+        value_dict["query_type"] = query_type
         value_dict["machine_name"] = machine_name
         value_dict["filename"] = filename
         value_dict ["date_string"] = date
