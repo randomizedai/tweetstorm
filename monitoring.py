@@ -198,7 +198,13 @@ def get_feature_string(con,feature,starttime,endtime,active_machines,debug=True)
     statuses = general_select_query(con, 0, statuses_query, count="all", debug=debug)
     for x in statuses:
         ans += "Status :: "  + str(x['status']) + "  Count :: " + str(x['count']) + "{\\newline}"
-
+    machine_query = "select count(*) as count,m.machine_name as mn from feature_logs fl join features_machines fm join machines m where"\
+    +" fl.features_machines_id = fm.id and fm.machine_id = m.id and fm.feature_id = " + str(feature['id']) + \
+    " and fl.start_time  >= \'" + str(starttime) + "\' and fl.start_time <= \'" + str(endtime) + "\' group by m.id";
+    statuses = general_select_query(con, 0, machine_query, count="all", debug=debug)
+    for x in statuses:
+        ans += "Machine :: "  + str(x['mn']) + "  Count :: " + str(x['count']) + "{\\newline}"
+    
 
     return ans    
 
