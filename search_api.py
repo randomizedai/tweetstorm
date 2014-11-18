@@ -85,7 +85,6 @@ def get_keyword_tweets(client,search_keyword,worker_id,sinceid=None,maxid=None,d
         return ("exception",e)
 
 def pick_search_query(client,query_type,query,worker_id,sinceid=None,maxid=None,debug=False):
-    print "here"
     try:
         if query_type == "users":
             return get_user_tweets(client,worker_id, sinceid, maxid,debug,screenname=query['screenname'],userid=query['userid'])
@@ -136,7 +135,6 @@ def get_search_tweets_recursive(client,worker_id,query_type,query,wait_time_in_s
     for _ in range(num_tries):
             
         status, response = pick_search_query(client,query_type,query,worker_id,sinceid=sinceid,maxid=maxid,debug=debug)
-        print "Amit", status
         if debug:
             print "taskid--" + str(worker_id) + " Waiting for " + str(wait_time_in_seconds) + " seconds for further tweets"
             print "taskid--" + str(worker_id) + " sinceid--" + str(sinceid) + "  maxid--" + str(maxid)
