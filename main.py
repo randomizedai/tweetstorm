@@ -116,7 +116,7 @@ def worker_main(worker_id,debug=False):
             release_file(con, worker_id, file_row['id'], filesize(file_row['path']), debug)
             
         
-        release_query(con,worker_id,query_type,query['id'],debug)
+        release_query(con,worker_id,query_type,query,debug)
         release_auth(con, worker_id, auth['id'], debug)        
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()

@@ -275,11 +275,11 @@ def release_auth(con,worker_id,id,debug=False):
 def release_file(con,worker_id,id,size,debug=False):
     update_table(con, worker_id, "files", {"active_status" : 0, 'last_access' : str(datetime.now()), "size" : size}, {"id" : id,"active_status" : worker_id}, debug)   
 
-def release_query(con,worker_id,query_type,id,debug=False):
+def release_query(con,worker_id,query_type,query,debug=False):
     if query_type == "users":
-        release_user(con,worker_id,id,debug)
+        release_user(con,worker_id,query['id'],debug)
     elif query_type == "keywords":
-        release_keyword(con,worker_id,id,debug)    
+        release_keyword(con,worker_id,query['id'],debug)    
 
 def release_feature_machine_pair(con,worker_id,fm_id,debug=False):
     update_table(con, worker_id, "features_machines", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : fm_id,"active_status" : worker_id}, debug)   
