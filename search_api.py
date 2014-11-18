@@ -12,9 +12,26 @@ from utils import *
 from database import *
 import time
 import timeout_decorator
+from main import wait_time_in_seconds
 
 def get_client(auth):
     return UserClient(auth['consumer_key'],auth['consumer_secret'],auth['access_token'], auth['access_token_secret'])
+
+
+@timeout_decorator.timeout(180)
+def get_manual_tweets(client, worker_id, id_list,debug=False):
+    try:
+        if debug:
+            print "taskid--" + str(worker_id) + "  Manual Tweet Query --> " + str(len(id_list))  
+        response = client.api.statuses.lookup.get(id=id_list)
+        if response.data:
+            return ("success",response.data)
+        else:
+            return ("no-data",response)
+    except Exception, e:
+            return ("exception",e)
+    
+
 
 @timeout_decorator.timeout(180)
 def get_user_tweets(client, worker_id, sinceid=None,maxid=None,debug=False,userid=None,screenname=None):
@@ -79,8 +96,30 @@ def pick_search_query(client,query_type,query,worker_id,sinceid=None,maxid=None,
         return "no-data",[]
 
 
+def get_manual_search_tweets(client,worker_id,query, wait_time_in_seconds,num_tries,debug=True):
+    status = ""
+    ans_tweets = []
+    current_count = 0
+    all_ids = [x['tweet_id'] for x in query]
+    
+    while (current_count < len(all_ids)):
+        id_list = all_ids[current_count:current_count+100]
+        status,data = get_manual_tweets(client, worker_id, id_list, debug)
+        if status == "success":
+            ans_tweets += data
+        current_count = current_count + 100
+        time.sleep(wait_time_in_seconds)
+        
+    return status,ans_tweets        
+
 def get_search_tweets_recursive(client,worker_id,query_type,query,wait_time_in_seconds=5.5,num_tries=50,sinceid=None,maxid=None,debug=False):
+    if query_type == "manual_tweets":
+        return get_manual_search_tweets(client,worker_id,query,wait_time_in_seconds,num_tries,debug=True)
+    
+    sinceid = query['since_id']
+    maxid = query['max_id']
     if debug:
+        
         if sinceid and maxid:
             print "taskid--" + str(worker_id) + " Since-Max Query == " + sinceid + "--" + maxid
             if maxid < sinceid:

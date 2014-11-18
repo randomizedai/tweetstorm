@@ -25,6 +25,24 @@ quotes = ["\"","\\","\/"]
 clean = re.compile('^[a-z \-]+$')
 
 
+def read_file(filename):
+    with open(filename) as fp:
+        lines = fp.readlines()
+        
+    lines = [x.strip() for x in lines]
+    return lines    
+
+def read_json_file(filename):
+    lines = read_file(filename)
+    ans = []
+    for line in lines:
+        try:
+            js = json.loads(line)
+            ans.append(js)
+        except:
+            pass
+    return ans             
+
 def memo(func):
     cache = {}
     @wraps(func)

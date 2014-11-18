@@ -103,7 +103,13 @@ def create_table (con,table_name, fields_dict,debug = False):
     cur.execute(query)
     cur.close()    
         
- 
+def general_modify_query(con,worker_id,query,debug=False):
+    if debug:
+        print "taskid--" + str(worker_id) + "  " + query
+    cur = con.cursor(mdb.cursors.DictCursor)
+    cur.execute(query)
+    cur.close()
+    
 def general_select_query(con,worker_id,query,count="one",debug=False):
     if debug:
         print "taskid--" + str(worker_id) + "  " + query
@@ -227,12 +233,17 @@ def get_multiple_active_rows(con,worker_id,table_name,bool_dict={},count=1,order
         else:
             return ("success", locked_rows)
     except Exception, e:
-       print_exec_error(worker_id)
-       return ("exception",e)
+        print_exec_error(worker_id)
+        return ("exception",e)
 
 
 
-
+def get_manual_tweet_ids(con,worker_id,count,debug):
+    status,row_tweets = get_multiple_active_rows(con, worker_id, "manual_tweets", bool_dict={"final_status":0},count, debug=debug) 
+    if status == "success" and row_tweets:
+        return row_tweets
+    else:
+        print "taskid--" + str(worker_id) + "  In getting Manual Tweets -->" + status
 
 def reset_old_table(con,worker_id,table_name,debug=False):
     cur = con.cursor(mdb.cursors.DictCursor)
@@ -274,6 +285,11 @@ def release_feature_machine_pair(con,worker_id,fm_id,debug=False):
     update_table(con, worker_id, "features_machines", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : fm_id,"active_status" : worker_id}, debug)   
 
 
+def remove_manual_tweets(con,worker_id,results):
+    ids = [x['id_str'] for x in results]
+    stringv = "(\'" + "\',\'".join(ids) +"\')"
+    general_modify_query(con, worker_id, "delete from manual_tweets where id in "+stringv, debug)
+    
 
 def get_feature_machine_pair(con,worker_id,machine_id,debug=False):
     fm_status,fm_value = get_active_row(con,worker_id,"features_machines",bool_dict={"machine_id":machine_id},debug=debug)

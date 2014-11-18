@@ -97,7 +97,7 @@ def worker_main(worker_id,debug=False):
                 print "taskid--" + str(worker_id) + "  No User/Keyword or Query Received"
         
         client = get_client(auth)    
-        status,response = get_search_tweets_recursive(client, worker_id, query_type, query, wait_time_in_seconds, num_retries,query['since_id'],query['max_id'],debug )
+        status,response = get_search_tweets_recursive(client, worker_id, query_type, query, wait_time_in_seconds, num_retries,debug )
         
         if debug:
             print "taskid--" + str(worker_id) + " Status --> " + status + " Downloaded Tweets --> " + str(len(response))
