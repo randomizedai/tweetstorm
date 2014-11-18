@@ -239,7 +239,7 @@ def get_multiple_active_rows(con,worker_id,table_name,bool_dict={},count=1,order
 
 
 def get_manual_tweet_ids(con,worker_id,count,debug):
-    status,row_tweets = get_multiple_active_rows(con, worker_id, "manual_tweets", bool_dict={"final_status":0},count=count, debug=debug) 
+    status,row_tweets = get_multiple_active_rows(con, worker_id, "manual_tweets", bool_dict={"final_status":0},count=count,order_by=None, debug=debug) 
     if status == "success" and row_tweets:
         return row_tweets
     else:
