@@ -332,7 +332,7 @@ def update_feature_logs(con,worker_id,id,status,description,debug=False):
     update_table(con, worker_id, "feature_logs", {"status":status,"exception_description":description,"end_time":str(datetime.now())}, {"id" : id },debug)
     
 def get_user(con,worker_id,debug=False):
-    ru_status,row_user = get_active_row(con,worker_id,"users",bool_dict={"retries<":3},debug=debug)
+    ru_status,row_user = get_active_row(con,worker_id,"users",bool_dict={"retries<":2},debug=debug)
     if ru_status == "success" and row_user:
         return row_user
     else:
@@ -340,7 +340,7 @@ def get_user(con,worker_id,debug=False):
     
        
 def get_keyword(con,worker_id,debug=False):
-    rk_status,row_kw = get_active_row(con,worker_id,"keywords",bool_dict={"retries<":3},debug=debug)
+    rk_status,row_kw = get_active_row(con,worker_id,"keywords",bool_dict={"retries<":2},debug=debug)
     if rk_status == "success" and row_kw:
         return row_kw
     else:

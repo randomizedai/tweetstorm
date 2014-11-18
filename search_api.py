@@ -167,7 +167,7 @@ def get_search_tweets_recursive(client,worker_id,query_type,query,wait_time_in_s
             else:
                 maxid = new_min_id  ## beginning query, make it a since one        
         
-        if status != "success" or len(response) == 1:
+        if status != "success" or len(response) < 1:
             break
              
     return status,ans_tweets    
