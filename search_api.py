@@ -12,7 +12,6 @@ from utils import *
 from database import *
 import time
 import timeout_decorator
-from main import wait_time_in_seconds
 
 def get_client(auth):
     return UserClient(auth['consumer_key'],auth['consumer_secret'],auth['access_token'], auth['access_token_secret'])
