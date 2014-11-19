@@ -103,7 +103,13 @@ def create_table (con,table_name, fields_dict,debug = False):
     cur.execute(query)
     cur.close()    
         
- 
+def general_modify_query(con,worker_id,query,debug=False):
+    if debug:
+        print "taskid--" + str(worker_id) + "  " + query
+    cur = con.cursor(mdb.cursors.DictCursor)
+    cur.execute(query)
+    cur.close()
+    
 def general_select_query(con,worker_id,query,count="one",debug=False):
     if debug:
         print "taskid--" + str(worker_id) + "  " + query
@@ -227,12 +233,17 @@ def get_multiple_active_rows(con,worker_id,table_name,bool_dict={},count=1,order
         else:
             return ("success", locked_rows)
     except Exception, e:
-       print_exec_error(worker_id)
-       return ("exception",e)
+        print_exec_error(worker_id)
+        return ("exception",e)
 
 
 
-
+def get_manual_tweet_ids(con,worker_id,count,debug):
+    status,row_tweets = get_multiple_active_rows(con, worker_id, "manual_tweets", bool_dict={"final_status":0},count=count,order_by=None, debug=debug) 
+    if status == "success" and row_tweets:
+        return row_tweets
+    else:
+        print "taskid--" + str(worker_id) + "  In getting Manual Tweets -->" + status
 
 def reset_old_table(con,worker_id,table_name,debug=False):
     cur = con.cursor(mdb.cursors.DictCursor)
@@ -264,16 +275,21 @@ def release_auth(con,worker_id,id,debug=False):
 def release_file(con,worker_id,id,size,debug=False):
     update_table(con, worker_id, "files", {"active_status" : 0, 'last_access' : str(datetime.now()), "size" : size}, {"id" : id,"active_status" : worker_id}, debug)   
 
-def release_query(con,worker_id,query_type,id,debug=False):
+def release_query(con,worker_id,query_type,query,debug=False):
     if query_type == "users":
-        release_user(con,worker_id,id,debug)
+        release_user(con,worker_id,query['id'],debug)
     elif query_type == "keywords":
-        release_keyword(con,worker_id,id,debug)    
+        release_keyword(con,worker_id,query['id'],debug)    
 
 def release_feature_machine_pair(con,worker_id,fm_id,debug=False):
     update_table(con, worker_id, "features_machines", {"active_status" : 0, 'last_access' : str(datetime.now())}, {"id" : fm_id,"active_status" : worker_id}, debug)   
 
 
+def remove_manual_tweets(con,worker_id,results,debug=False):
+    ids = [x['id_str'] for x in results]
+    stringv = "(\'" + "\',\'".join(ids) +"\')"
+    general_modify_query(con, worker_id, "delete from manual_tweets where tweet_id in "+stringv, debug=debug)
+    
 
 def get_feature_machine_pair(con,worker_id,machine_id,debug=False):
     fm_status,fm_value = get_active_row(con,worker_id,"features_machines",bool_dict={"machine_id":machine_id},debug=debug)
@@ -316,7 +332,7 @@ def update_feature_logs(con,worker_id,id,status,description,debug=False):
     update_table(con, worker_id, "feature_logs", {"status":status,"exception_description":description,"end_time":str(datetime.now())}, {"id" : id },debug)
     
 def get_user(con,worker_id,debug=False):
-    ru_status,row_user = get_active_row(con,worker_id,"users",bool_dict={"retries<":3},debug=debug)
+    ru_status,row_user = get_active_row(con,worker_id,"users",bool_dict={"retries<":2},debug=debug)
     if ru_status == "success" and row_user:
         return row_user
     else:
@@ -324,7 +340,7 @@ def get_user(con,worker_id,debug=False):
     
        
 def get_keyword(con,worker_id,debug=False):
-    rk_status,row_kw = get_active_row(con,worker_id,"keywords",bool_dict={"retries<":3},debug=debug)
+    rk_status,row_kw = get_active_row(con,worker_id,"keywords",bool_dict={"retries<":2},debug=debug)
     if rk_status == "success" and row_kw:
         return row_kw
     else:
@@ -338,13 +354,14 @@ def get_auth(con,worker_id,debug=False):
         print "taskid--" + str(worker_id) + "  In getting Auth -->" + auth_status
 
 
-def get_file(con,worker_id,download_dir,machine_name,date,hour,chunk_size,debug=False):
-    bool_dict = {"machine_name" : machine_name, "date_string" : date, "hour_string" : hour, "size<":chunk_size}
+def get_file(con,worker_id,query_type,download_dir,machine_name,date,hour,chunk_size,debug=False):
+    bool_dict = {"query_type":query_type,"machine_name" : machine_name, "date_string" : date, "hour_string" : hour, "size<":chunk_size}
     file_status,file_row = get_active_row(con,worker_id,"files",bool_dict,debug)
     if file_status != "success":
         value_dict = {}
         filename = "tweets_" + get_random_uuid()  + ".txt"
         value_dict["path"] = download_dir + "/" + date + "/" + hour + "/" + filename
+        value_dict["query_type"] = query_type
         value_dict["machine_name"] = machine_name
         value_dict["filename"] = filename
         value_dict ["date_string"] = date

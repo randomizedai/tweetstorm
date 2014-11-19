@@ -15,7 +15,10 @@ list_keywords = []
 
 for line in data:
     list_keywords.append(line.strip().lower())
-
+    list_keywords.append("#" + "".join(line.strip().lower().split()))
+    list_keywords.append("@" + "".join(line.strip().lower().split()))
+    list_keywords.append("".join(line.strip().lower().split()))
+    
 tagger = getTagger(list_keywords)
 
 for row in sys.stdin:

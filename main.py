@@ -97,13 +97,13 @@ def worker_main(worker_id,debug=False):
                 print "taskid--" + str(worker_id) + "  No User/Keyword or Query Received"
         
         client = get_client(auth)    
-        status,response = get_search_tweets_recursive(client, worker_id, query_type, query, wait_time_in_seconds, num_retries,query['since_id'],query['max_id'],debug )
+        status,response = get_search_tweets_recursive(client, worker_id, query_type, query, wait_time_in_seconds, num_retries,debug )
         
         if debug:
             print "taskid--" + str(worker_id) + " Status --> " + status + " Downloaded Tweets --> " + str(len(response))
         
         
-        file_status,file_row = get_file(con, worker_id, download_dir + "/" + query_type, hostname, get_current_date(), get_current_hour(), chunk_size, debug)
+        file_status,file_row = get_file(con, worker_id, query_type,download_dir + "/" + query_type, hostname, get_current_date(), get_current_hour(), chunk_size, debug)
         if debug:
             print "taskid--" + str(worker_id) + " File Status --> " + file_status
             print "taskid--" + str(worker_id) + " File Name --> " + file_row['path']
@@ -116,7 +116,7 @@ def worker_main(worker_id,debug=False):
             release_file(con, worker_id, file_row['id'], filesize(file_row['path']), debug)
             
         
-        release_query(con,worker_id,query_type,query['id'],debug)
+        release_query(con,worker_id,query_type,query,debug)
         release_auth(con, worker_id, auth['id'], debug)        
     except Exception, e:
         exc_type, exc_obj, exc_tb = sys.exc_info()

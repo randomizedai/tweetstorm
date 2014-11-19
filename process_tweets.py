@@ -3,7 +3,7 @@ Created on Aug 9, 2014
 
 @author: Amit
 '''
-from util import *
+from utils import *
 from database import *
 from filesystem import *
 from datetime import datetime
@@ -78,7 +78,10 @@ def put_download_logs(query_type,query,status,results,worker_id,con,file_id,debu
 
         
 def process_output(query_type,query,status, results, worker_id, con, file_handle,file_id,debug=False):
-    
+    if query_type == "manual_tweets":
+        dump_tweets_into_file(file_handle, results)
+        remove_manual_tweets(con,worker_id,results)
+        return
     if isinstance(results,list) and len(results) > 0:
         new_minid = compute_min_id(results)
         new_maxid = compute_max_id(results)
