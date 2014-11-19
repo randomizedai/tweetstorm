@@ -27,26 +27,6 @@ def parse_triplets(id_parse_trees, labels_map, concepts_to_find=['water', 'droug
 					labels_map,
 					debug)
 				)
-	if debug:
-		print "Have", len(results), "Sentence matches"
-		print "For concepts:", concepts_to_find[0], 'and', concepts_to_find[1]
-	statistics = {}
-	for el in results:
-		words_between = el[0][1].getText().split(el[0][2].getText())[0].rstrip()
-		if len(words_between.split(" ")) > 5:
-			verbal = el[0][1].getTextOfNotTagOnly('N')
-			if verbal in statistics:
-				statistics[verbal] += 1
-			else:
-				statistics[verbal] = 1
-			# print verbal
-		else:
-			if words_between in statistics:
-				statistics[words_between] += 1
-			else:
-				statistics[words_between] = 1
-			# print words_between
-	print sorted([(k, v) for k, v in statistics.items()], key=lambda x:x[1], reverse=True)
 	return results
 
 def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug):
@@ -106,43 +86,34 @@ def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, d
 			# id_parse_tree[str(k)] = open(parse_trees_path + k + '.parse_tree', 'r').read()
 		return id_parse_tree
 
-	# futures_list = []
-	# results = []
-	# with futures.ProcessPoolExecutor(max_workers=int(num_threads)) as executor:
-	#	 if debug:
-	#		 print ">>> Executor started."
-	#	 # parse_tree_construction = [pos1, pos2, parse_tree],
-	#	 # where pos are the positions of the sentence in the originaltext
-	#	 for parse_tree_construction in parse_trees:
-	#		 if debug:
-	#			 print "processing a parse tree"
-	#		 futures_list.append(
-	#			 executor.submit(
-	#				 find_matched_verbal_phrase, 
-	#				 parse_tree_construction, 
-	#				 concepts_to_find,
-	#				 labels_map,
-	#				 debug))
-	#		 if debug:
-	#			 print "Len of futures_List", len(futures_list)
-	#	 for future in futures_list:
-	#		 future_result = future.result()
-	#		 future_exception = future.exception()
-	#		 if future_exception is not None:
-	#			 print "!!! Future returned an exception:", future_exception
-	#		 else:
-	#			 if future_result:
-	#				 results.extend(future_result)
+def get_statistics(triplets):
+	statistics = {}
+	for el in triplets:
+		words_between = el[0][1].getText().split(el[0][2].getText())[0].rstrip()
+		if len(words_between.split(" ")) > 5:
+			verbal = el[0][1].getTextOfNotTagOnly('N')
+			if verbal in statistics:
+				statistics[verbal] += 1
+			else:
+				statistics[verbal] = 1
+			# print verbal
+		else:
+			if words_between in statistics:
+				statistics[words_between] += 1
+			else:
+				statistics[words_between] = 1
+			# print words_between
+	return statistics
 
 if __name__ == "__main__":
-	import sys, getopt
+	import sys, getopt, codecs
 	num_threads = 1
 	num_pages = 1
 	debug = 0
 	file_type = 'news'
 	file_path = 'articles/s00114-011-0762-7.txt'
 	concepta = 'climate change'
-	conceptb = 'GHG emission'
+	conceptb = 'sea level rise'
 	parser_path = "/vagrant/stanford-parser-2012-11-12/lexparser.sh"
 	argv = sys.argv[1:]
 	try:
@@ -172,3 +143,11 @@ if __name__ == "__main__":
 
 	id_parse_trees = get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug)
 	triplets = parse_triplets(id_parse_trees=id_parse_trees, labels_map=labels_map, concepts_to_find=[concepta, conceptb], parser_path=parser_path, debug=debug)
+	if debug:
+		print ">>>>>>>>>>>>>>>>>>>>>>>>"
+		print "Have", len(triplets), "Sentence matches"
+		print "For concepts:", concepts_to_find[0], 'and', concepts_to_find[1]
+	statistics = get_statistics(triplets)
+	output_name = 'statistics-%s-%s.json' % (concepta.replace(' ', '_'), conceptb.replace(' ', '_'))
+	codecs.open(output_name, 'w', 'utf-8').write(json.dumps(statistics))
+	print sorted([(k, v) for k, v in statistics.items()], key=lambda x:x[1], reverse=True)
