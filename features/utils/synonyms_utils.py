@@ -49,7 +49,7 @@ if __name__ == "__main__":
 	# 	topics.append(topic)
 
 	# topics here are: {topic_norm_name: {con_norm_name:[weight, con_name]}}
-	map_, _, top = read_topic_to_json_from_db(path='http://146.148.70.53/topics/list/?page_size=1000&concepts=1', dir_maps=BASE_DIR+'/../data/')
+	map_, _, top = read_topic_to_json_from_db(path='http://146.148.70.53/topics/list/?page_size=1000&concepts=1', dir_maps=BASE_DIR+'/../../data/')
 	for k, v in top.items():
 		topic_name = map_[k][0]
 		topic = {}
