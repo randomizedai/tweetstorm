@@ -45,15 +45,20 @@ def parse_tree_from_file(path_to_parse_trees, separator):
     sentences = text.split('\n')
     # split the lines by the separator
     sen_parse_tree_list = []
+    positions_map = []
     for sen in sentences:
         if sen:
             try:
                 article_name, positions, sentence, parse_tree = sen.split(separator)
+                if positions not in positions_map:
+                    positions_map.append(positions)
+                else:
+                    continue
                 position_current_1, position_current_2 = positions.split("_")
                 position_current_1 = int(position_current_1)
                 position_current_2 = int(position_current_2)
             except ValueError:
-                return sen_parse_tree_list
+                continue
             sen_parse_tree_list.append((position_current_1, position_current_2, parse_tree))
     sen_parse_tree_list_sorted = sorted(sen_parse_tree_list, key=lambda x: x[0])
     return sen_parse_tree_list_sorted
@@ -84,7 +89,10 @@ def get_terms_from_string(sentence, literals):
             else:
                 tag_type = TextTag.Type.WORD
 
-            tag_list.append(TextTag(tag_type, start, start + len(tag), unicode(tag).encode('utf-8')))
+            try:
+                tag_list.append(TextTag(tag_type, start, start + len(tag), unicode(tag).encode('utf-8')))
+            except Exception, e:
+                pass
             start += len(tag)
     literalTags = findLiterals(tag_list, literals, knownNotLiterals,
                                DictWords, get_stopwords(), 0, False)
@@ -196,7 +204,7 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
             for k, v in labels_map.items():
                 if v[1] == norm_term:
                     temp_literals[k.encode('utf-8')] = 1
-        
+
         tree_structure = parsetreenode.ParseTreeNode.parse(parse_tr)
         root = None
         for tree_structure in parsetreenode.ParseTreeNode.parse(parse_tr):

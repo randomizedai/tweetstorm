@@ -29,7 +29,7 @@ def parse_triplets(id_parse_trees, labels_map, concepts_to_find=['water', 'droug
 				)
 	return results
 
-def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug):
+def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug, smart, labels_map, concepts_to_find):
 	parse_trees_path = BASE_DIR + '/../../data/parse_trees/'
 
 	futures_list = []
@@ -43,8 +43,8 @@ def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, d
 				text = v['text']
 				if text.startswith('RT'):
 					continue
-				if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0:
-					futures_list.append(executor.submit(parse_fileTextBlob, parse_trees_path + k, text, parser_path, k))
+				if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0 or smart == 1:
+					futures_list.append(executor.submit(parse_fileTextBlob, parse_trees_path + k, text, parser_path, k, smart, labels_map, concepts_to_find))
 				else:
 					id_parse_tree[k] = parse_trees_path + k + '.parse_tree'
 			for future in futures_list:
@@ -69,7 +69,7 @@ def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, d
 			if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0:
 				if debug:
 					print "Processing file with parser"
-				parse_fileTextBlob(parse_trees_path + k, text, parser_path, str(k))
+				parse_fileTextBlob(parse_trees_path + k, text, parser_path, str(k), smart, labels_map, concepts_to_find)
 			id_parse_tree[str(k)] = parse_trees_path + k + '.parse_tree'
 			# id_parse_tree[str(k)] = open(parse_trees_path + k + '.parse_tree', 'r').read()
 		return id_parse_tree
@@ -81,7 +81,7 @@ def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, d
 		for k, v in articles.items():
 			text = v['title'] + '\n' + v['body']
 			if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0:
-				parse_fileTextBlob(parse_trees_path + k, text, parser_path, str(k))
+				parse_fileTextBlob(parse_trees_path + k, text, parser_path, str(k), smart, labels_map, concepts_to_find)
 			id_parse_tree[str(k)] = parse_trees_path + k + '.parse_tree'
 			# id_parse_tree[str(k)] = open(parse_trees_path + k + '.parse_tree', 'r').read()
 		return id_parse_tree
@@ -105,11 +105,20 @@ def get_statistics(triplets):
 			# print words_between
 	return statistics
 
+def sort_json_by_occurrence(file_pattern):
+	import codecs, json, glob
+	for file in glob.glob(file_pattern): #"decrease-*.json"
+	    statistics = json.loads(codecs.open(file, 'r', 'utf-8').read())
+	    sorted_list = sorted([(k, v) for k, v in statistics.items()], key=lambda x:x[1], reverse=True)
+	    codecs.open(file+'.txt', 'w', 'utf-8').write( "\n".join( ["%s_____@@@@@_____%d" % (el[0], el[1]) for el in sorted_list] ) )
+
 if __name__ == "__main__":
 	import sys, getopt, codecs
 	num_threads = 1
 	num_pages = 1
 	debug = 0
+	# Should we check if there are 2 concepts in the sentence before parsing - then 1
+	smart = 0
 	file_type = 'news'
 	file_path = 'articles/s00114-011-0762-7.txt'
 	concepta = 'climate change'
@@ -141,13 +150,13 @@ if __name__ == "__main__":
 		elif opt in ("-p", "--parser"):
 			parser_path = arg
 
-	id_parse_trees = get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug)
+	id_parse_trees = get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug, smart, labels_map, [concepta, conceptb])
 	triplets = parse_triplets(id_parse_trees=id_parse_trees, labels_map=labels_map, concepts_to_find=[concepta, conceptb], parser_path=parser_path, debug=debug)
 	if debug:
 		print ">>>>>>>>>>>>>>>>>>>>>>>>"
 		print "Have", len(triplets), "Sentence matches"
 		print "For concepts:", concepts_to_find[0], 'and', concepts_to_find[1]
 	statistics = get_statistics(triplets)
-	output_name = 'statistics-%s-%s.json' % (concepta.replace(' ', '_'), conceptb.replace(' ', '_'))
+	output_name = 'work/%s-statistics-%s-%s.json' % (file_type, concepta.replace(' ', '_'), conceptb.replace(' ', '_'))
 	codecs.open(output_name, 'w', 'utf-8').write(json.dumps(statistics))
 	print sorted([(k, v) for k, v in statistics.items()], key=lambda x:x[1], reverse=True)

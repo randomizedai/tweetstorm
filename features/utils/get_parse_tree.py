@@ -3,6 +3,7 @@ import sys, os
 import codecs
 import time
 from tempfile import NamedTemporaryFile
+from outputVerbalPhrase import * 
 
 PATH=''
 
@@ -66,7 +67,7 @@ def main():
         parse_file(location.strip())
 
 
-def parse_fileTextBlob(location, text=None, path_to_parser="/home/iuliia.proskurnia/stanford-parser-2012-11-12/lexparser.sh", k=0):
+def parse_fileTextBlob(location, text=None, path_to_parser="/home/iuliia.proskurnia/stanford-parser-2012-11-12/lexparser.sh", k=0, smart=0, labels_map=None, concepts_to_find=None):
     if text is None:
         with codecs.open(location, 'r', 'utf-8') as fh:
             text = fh.read()
@@ -74,24 +75,47 @@ def parse_fileTextBlob(location, text=None, path_to_parser="/home/iuliia.proskur
     num_elems = len(sentence_list)
     
     separator = "_____@@@@@_____"
-    with codecs.open(location + ".parse_tree", 'w', 'utf-8') as f_parse_tree_out:
-        for sentence in sentence_list:
-            sen = str(sentence)
-            # preprocessed = preprocessText(sen)
-            preprocessed = sen
-            f = NamedTemporaryFile(delete=False)
-            filename = f.name
-            f.close()
-            with codecs.open(filename, 'w', 'utf-8') as fh:
-                try:
-                    fh.write(preprocessed)
-                except:
-                    break
-                fh.flush()
-                fh.seek(0)
-                parse_tree = subprocess.Popen([path_to_parser, fh.name], stdout=subprocess.PIPE).stdout.read().decode("utf-8").encode('ascii', 'ignore')
-            os.unlink(filename)
-            f_parse_tree_out.write('%s%s%d_%d%s%s%s%s\n' % (location, separator, sentence.start_index, sentence.end_index, separator, sen, separator, parse_tree.replace('\n', ' ')))
+    if smart:
+        f_parse_tree_out = codecs.open(location + ".parse_tree", 'a', 'utf-8')
+    else:
+        f_parse_tree_out = codecs.open(location + ".parse_tree", 'w', 'utf-8')
+
+    for sentence in sentence_list:
+        sen = str(sentence)
+        # preprocessed = preprocessText(sen)
+        preprocessed = sen
+
+        if smart and labels_map is not None and concepts_to_find is not None:
+            from outputVerbalPhrase import norm_literal, get_terms_from_string
+            temp_literals = {}
+            for term in concepts_to_find:
+                norm_term = norm_literal(term)
+                for k, v in labels_map.items():
+                    if v[1] == norm_term:
+                        temp_literals[k.encode('utf-8')] = 1
+
+            tag_list = get_terms_from_string(preprocessed, temp_literals)
+            tag_tuple_list = [(l.value, l.start, l.end) for l in tag_list]
+            tag_tuple_list_syn = []
+            for el in tag_tuple_list:
+                tag_tuple_list_syn.append( (labels_map[el[0]][1], el[1], el[2]) )
+            if len(set([l[0] for l in tag_tuple_list_syn])) != 2:
+                continue
+
+        f = NamedTemporaryFile(delete=False)
+        filename = f.name
+        f.close()
+        with codecs.open(filename, 'w', 'utf-8') as fh:
+            try:
+                fh.write(preprocessed)
+            except:
+                break
+            fh.flush()
+            fh.seek(0)
+            parse_tree = subprocess.Popen([path_to_parser, fh.name], stdout=subprocess.PIPE).stdout.read().decode("utf-8").encode('ascii', 'ignore')
+        os.unlink(filename)
+        f_parse_tree_out.write('%s%s%d_%d%s%s%s%s\n' % (location, separator, sentence.start_index, sentence.end_index, separator, sen, separator, parse_tree.replace('\n', ' ')))
+    f_parse_tree_out.close()
     return k, location + ".parse_tree"
         
 def parse_file(location, text=None, path_to_parser="/home/iuliia.proskurnia/stanford-parser-2012-11-12/lexparser.sh"):
