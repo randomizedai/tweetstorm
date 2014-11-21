@@ -3,7 +3,6 @@ import os
 # NOTE: We need to have get_parse_tree file in the code folder
 sys.path.append(".")
 sys.path.append("/opt/texpp")
-from get_parse_tree import preprocessText
 import parsetreenode
 from _chrefliterals import WordsDict, findLiterals, TextTag, TextTagList, normLiteral
 
@@ -184,6 +183,7 @@ Output: ((concept1, verbal phrase, concept2), positions of the sentence)
 """
 def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, debug):
     import codecs, re
+    from get_parse_tree import preprocessText
     triplets = []
     pos1, pos2, parse_tree = parse_tree_input
     position_of_roots = [m.start() for m in re.finditer('\(ROOT ', parse_tree)]
