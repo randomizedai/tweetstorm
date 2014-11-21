@@ -3,7 +3,7 @@ import os
 # NOTE: We need to have get_parse_tree file in the code folder
 sys.path.append(".")
 sys.path.append("/opt/texpp")
-from get_parse_tree import parse_fileTextBlob, preprocessText
+from get_parse_tree import preprocessText
 import parsetreenode
 from _chrefliterals import WordsDict, findLiterals, TextTag, TextTagList, normLiteral
 
