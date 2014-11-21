@@ -110,7 +110,7 @@ elif file_type == "scientific":
 
 if file_type != 'twitter':
 	timestr = time.strftime("%Y%m%d/%H/")
-	d = BASE_DIR + '/work/topics/' + str(timestr)
+	d = BASE_DIR + '/utils/work/topics/' + str(timestr)
 	if not os.path.exists(d):
 		os.makedirs(d)
 
