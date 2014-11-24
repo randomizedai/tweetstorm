@@ -35,28 +35,33 @@ class ConceptOccurrence:
 
 
 	def compute_score_for_manual_topics_hierarcy(self, topics_scores):
-		import json, os
-		path = os.path.dirname(os.path.realpath(__file__)) + "/../../data/topics_hierarchy.json"
-		manual_hierarchy = json.loads( open(path, 'r').read() )
+		import json, os, urllib2, json
+		# path = os.path.dirname(os.path.realpath(__file__)) + "/../../data/topics_hierarchy.json"
+		path = "http://146.148.70.53/topics/hierarchy/"
+		manual_hierarchy = json.load(urllib2.urlopen(path))
+		# manual_hierarchy = json.loads( open(path, 'r').read() )
 		queue = []
 		manual_weights = {}
-		for k, v in manual_hierarchy.items():
-			queue.append((k, v))
+		# for k, v in manual_hierarchy.items():
+		# 	queue.append((k, v))
+		for topic_list in manual_hierarchy:
+			queue.append((topic_list['name'], topic_list['child_topics'], topic_list['id']))
 		while queue:
-			k, v = queue.pop(0)
+			k, v, id_ = queue.pop(0)
 			k_norm = norm_literal(k)
-			manual_weights[k] = topics_scores[k_norm] if (k_norm in topics_scores and topics_scores[k_norm] > 0) else 0
+			manual_weights[id_] = topics_scores[k_norm] if (k_norm in topics_scores and topics_scores[k_norm] > 0) else 0
 			for listofchildren in v:
-				k_v = listofchildren.keys()[0]
-				v_v = listofchildren.values()[0]
+				k_v = listofchildren['name']
+				v_v = listofchildren['child_topics']
+				id_v = listofchildren['id']
 				k_v_norm = norm_literal(k_v)
 				if k_v_norm in topics_scores:
-					manual_weights[k] += topics_scores[k_v_norm]
+					manual_weights[id_] += topics_scores[k_v_norm]
 				if not v_v:
 					if k_v_norm in topics_scores:
-						manual_weights[k_v] = topics_scores[k_v_norm]
+						manual_weights[id_v] = topics_scores[k_v_norm]
 				else:
-					queue.append((k_v, v_v))
+					queue.append((k_v, v_v, id_v))
 		return manual_weights
 
 
