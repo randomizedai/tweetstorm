@@ -30,6 +30,7 @@ def parse_triplets(id_parse_trees, labels_map, concepts_to_find=['water', 'droug
 	return results
 
 def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug, smart, labels_map, concepts_to_find):
+	from get_parse_tree import parse_fileTextBlob
 	parse_trees_path = BASE_DIR + '/../../data/parse_trees/'
 
 	futures_list = []
@@ -141,6 +142,8 @@ if __name__ == "__main__":
 			file_path = arg
 		elif opt in ("-y", "--file_type"):
 			file_type = arg
+			if file_type == 'news':
+				smart = 1
 		elif opt in ("-n", "--num_pages"):
 			num_pages = int(arg)
 		elif opt in ("-a", "--aconcept"):
