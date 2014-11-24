@@ -16,13 +16,13 @@ class ConceptOccurrence:
 		str_ = ';'.join(map(str, [(k, v) for k, v in self.occurrence_map.items()]))
 		return "%s\n%s\n%s" % (self.text.encode('utf-8'), self.preprocessed.encode('utf-8'), str_)
 
-	def struct_to_map(self, hierarchy, topics):
+	def struct_to_map(self, hierarchy, topics, manual_hierarchy):
 		res = {}
 		if self.occurrence_map:
 			res['preprocessed'] = self.preprocessed
 			res['occurrence_map'] = sorted([(k, v) for k,v in self.occurrence_map.items()], key=lambda x:x[1], reverse=True)
 			topics_scores = self.compute_hierarchy_scores_for_labels(hierarchy, topics)
-			topics_hierarchy_score = self.compute_score_for_manual_topics_hierarcy(topics_scores)
+			topics_hierarchy_score = self.compute_score_for_manual_topics_hierarcy(topics_scores, manual_hierarchy)
 			if topics_scores:
 				res['labels'] = sorted([(k, v) for k,v in topics_scores.items()], key=lambda x:x[1], reverse=True)
 			else:
@@ -34,11 +34,9 @@ class ConceptOccurrence:
 		return res
 
 
-	def compute_score_for_manual_topics_hierarcy(self, topics_scores):
+	def compute_score_for_manual_topics_hierarcy(self, topics_scores, manual_hierarchy):
 		import json, os, urllib2, json
 		# path = os.path.dirname(os.path.realpath(__file__)) + "/../../data/topics_hierarchy.json"
-		path = "http://146.148.70.53/topics/hierarchy/"
-		manual_hierarchy = json.load(urllib2.urlopen(path))
 		# manual_hierarchy = json.loads( open(path, 'r').read() )
 		queue = []
 		manual_weights = {}

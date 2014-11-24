@@ -1,11 +1,14 @@
 #!/usr/bin/env python
-import os, sys, json, getopt, codecs
+import os, sys, json, getopt, codecs, json, urllib2
 # python xxx.py -y 'twitter' < tweets_jsons.txt > output.txt 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(BASE_DIR + '/utils/')
 from concept_occurrence import *
 import time
 sys.setrecursionlimit(10000)
+
+topic_manual_hierarchy_path = "http://146.148.70.53/topics/hierarchy/"
+manual_hierarchy = json.load(urllib2.urlopen(topic_manual_hierarchy_path))
 
 argv = sys.argv[1:]
 try:
@@ -42,13 +45,13 @@ if file_type == "twitter":
 	# tweets = tweets_to_map("http://146.148.70.53/tweets/list/", "http://146.148.70.53/tweets/", num_pages)
 	# directory = BASE_DIR + "/../../data/julia_llda/"
 	# tweets = read_from_multiple_files(directory)
-	for row in sys.stdin.readlines()[0:10]:
+	for row in sys.stdin:
 		v = json.loads(row)
 		k = v['id_str']
 		# for k, v in tweets.items(): #open(BASE_DIR + "/../demo.json", 'r').readlines():
 		occurrence = ConceptOccurrence(v['text'], file_type)
 		occurrence.get_occurrence_count(labels_map, hierarchy, general_concepts_map)
-		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics)
+		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics, manual_hierarchy)
 
 	# for k, v in docs_occurrence.items():
 	# 	if 'labels' in v:
@@ -84,7 +87,7 @@ elif file_type == "news":
 		occurrence = ConceptOccurrence(v['body'], file_type)
 		occurrence.title = v['title']
 		occurrence.get_occurrence_count(labels_map, hierarchy, general_concepts_map)
-		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics)
+		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics, manual_hierarchy)
 
 	# model_path = wrap_llda(docs_occurrence)
 	# topic_vector_map = read_topic_vectors(model_path, general_concepts_map, labels_map)
@@ -105,7 +108,7 @@ elif file_type == "scientific":
 		occurrence = ConceptOccurrence(v['body'], file_type)
 		occurrence.title = v['title']
 		occurrence.get_occurrence_count(labels_map, hierarchy, general_concepts_map)
-		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics)
+		docs_occurrence[str(k)] = occurrence.struct_to_map(hierarchy, topics, manual_hierarchy)
 
 if file_type != 'twitter':
 	timestr = time.strftime("%Y%m%d/%H/")
