@@ -189,9 +189,13 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
     position_of_roots = [m.start() for m in re.finditer('\(ROOT ', parse_tree)]
     if len(position_of_roots) > 1:
         new_parse_trees = []
-        for i in range(len(position_of_roots) - 1):
-            new_parse_trees.append(parse_tree[position_of_roots[i]:position_of_roots[i+1]])
-        new_parse_trees.append(parse_tree[position_of_roots[i]:len(parse_tree)])
+        i = 0
+        while i < len(position_of_roots) - 1:
+            if '(S' in parse_tree[position_of_roots[i]:position_of_roots[i+1]]:
+                new_parse_trees.append(parse_tree[position_of_roots[i]:position_of_roots[i+1]])
+            i += 1
+        if '(S' in parse_tree[position_of_roots[i]:len(parse_tree)]:
+            new_parse_trees.append(parse_tree[position_of_roots[i]:len(parse_tree)])
         if debug:
             print "Split of parse trees:", len(new_parse_trees)
     else:
@@ -201,6 +205,7 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
         temp_literals = {}
         for term in concepts_to_find:
             norm_term = norm_literal(term)
+            temp_literals[norm_term.encode('utf-8')] = 1
             for k, v in labels_map.items():
                 if v[1] == norm_term:
                     temp_literals[k.encode('utf-8')] = 1
@@ -220,7 +225,10 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
 
         tag_tuple_list_syn = []
         for el in tag_tuple_list:
-            tag_tuple_list_syn.append( (labels_map[el[0]][1], el[1], el[2]) )
+            if el[0] in labels_map:
+                tag_tuple_list_syn.append( (labels_map[el[0]][1], el[1], el[2]) )
+            else:
+                tag_tuple_list_syn.append((el[0], el[1], el[2]))
 
         if debug:
             print "--------------"
@@ -269,3 +277,176 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
 def read_file_remotely_or_localy(file_path):
     import codecs
     return codecs.open(file_path, 'r', 'utf-8').read()
+
+def find_matched_objects(parse_tree_input, subject, labels_map, statistics_previous, statistics_cleaned_previous, debug):
+    import codecs, re
+    from get_parse_tree import preprocessText
+    objects = {}
+    objects['front'] = []
+    objects['back'] = []
+    pos1, pos2, parse_tree = parse_tree_input
+    position_of_roots = [m.start() for m in re.finditer('\(ROOT ', parse_tree)]
+    if len(position_of_roots) > 1:
+        new_parse_trees = []
+        i = 0
+        while i < len(position_of_roots) - 1:
+            if '(S' in parse_tree[position_of_roots[i]:position_of_roots[i+1]]:
+                new_parse_trees.append(parse_tree[position_of_roots[i]:position_of_roots[i+1]])
+            i += 1
+        if '(S' in parse_tree[position_of_roots[i]:len(parse_tree)]:
+            new_parse_trees.append(parse_tree[position_of_roots[i]:len(parse_tree)])
+        if debug:
+            print "Split of parse trees:", len(new_parse_trees)
+    else:
+        new_parse_trees = [parse_tree]
+
+    for parse_tr in new_parse_trees:
+        temp_literals = {}
+        norm_term = norm_literal(subject)
+        temp_literals[norm_term.encode('utf-8')] = 1
+        for k, v in labels_map.items():
+            if v[1] == norm_term:
+                temp_literals[k.encode('utf-8')] = 1
+
+        tree_structure = parsetreenode.ParseTreeNode.parse(parse_tr)
+        root = None
+        for tree_structure in parsetreenode.ParseTreeNode.parse(parse_tr):
+            if tree_structure.getText() != ".":
+                root = tree_structure
+        if not root:
+            return objects
+
+        sentence = preprocessText(root.getText())
+
+        tag_list = get_terms_from_string(sentence, temp_literals)
+        tag_tuple_list = [(l.value, l.start, l.end) for l in tag_list]
+
+        tag_tuple_list_syn = []
+        for el in tag_tuple_list:
+            if el[0] in labels_map:
+                tag_tuple_list_syn.append( (labels_map[el[0]][1], el[1], el[2]) )
+            else:
+                tag_tuple_list_syn.append((el[0], el[1], el[2]))
+
+        if debug:
+            print "[[[[[[[[[[[[[[[[["
+            print sentence
+            print "Looking for: ", temp_literals
+            print tag_tuple_list
+            print tag_tuple_list_syn
+        if len(set([l[0] for l in tag_tuple_list_syn])) == 0:
+            return objects
+
+        # pair = [(('concept1', pos1, pos2, relative_position)),
+        #   (('concept2', pos1, pos2, relative_position))]
+        # where relative position is (?): ...climate(1) ...climate(2)...
+        for subj in tag_tuple_list_syn:
+            if debug:
+                print ">>>>>>>>>>>> Concept detected >>>>>>>>>>>"
+                print parse_tr
+                print sentence[subj[1]:subj[2]]
+                print root.getText()
+                print "]]]]]]]]]]]]]]]]]]"
+            occur = root.findNodesForConcept(sentence[subj[1]:subj[2]])[0]
+            npvpnp = occur.findNpVpNp()
+            if npvpnp is not None:
+                cleaned_triplet = clean_triplets([npvpnp])
+                if cleaned_triplet:
+                    # if cleaned_triplet[0].final_verbal_phrase in statistics_cleaned_previous.keys():
+                    if npvpnp[0] != occur:
+                        if len(npvpnp[0].getText().split(' ')) < 6 or CleanTriplet.is_alphanumeric(npvpnp[0].getText()):
+                            objects['front'].append(npvpnp[0].getText())
+                    else:
+                        if len(npvpnp[2].getText().split(' ')) < 6 or CleanTriplet.is_alphanumeric(npvpnp[2].getText()):
+                            objects['back'].append(npvpnp[2].getText())
+    return objects
+
+class CleanTriplet:
+    def __init__(self, triplet):
+        import copy
+        self.triplet = copy.deepcopy(triplet)
+        self.prev_triplet = triplet
+        self.words_between = self.triplet[1].getText().split(self.triplet[2].getText())[0].rstrip()
+        self.verbal = self.triplet[1].getTextOfNotTagOnly('N')
+        self.verb = []
+        self.final_verbal_phrase = ""
+        self.preposition = ""
+
+    def identify_preposition(self):
+        preps = self.triplet[1]._findDownReccursive(tag="PP", until=self.triplet[2])
+        for prep in preps:
+            self.preposition += prep.getTextOfNotTagOnly(tag='N')
+            break
+
+    @staticmethod
+    def is_alphanumeric(final_verbal_phrase):
+        import re
+        valid = re.match('^[\w-]+$', final_verbal_phrase) is not None
+        return valid
+
+    # input: list of verbs
+    # output: list of tuples (verb, norm_verb)
+    def normalize_triplet(self):
+        from nltk.stem.wordnet import WordNetLemmatizer
+        lemmatizer = WordNetLemmatizer()
+        verbs = self.triplet[1]._findDownReccursive(tag="VB", until=self.triplet[2])
+        for verb in verbs:
+            verb.text=lemmatizer.lemmatize(verb.text, 'v')
+            verb.set_cached_text_for_parents(None)
+        return self.triplet
+
+
+    # should be called after the verbs are normalized
+    def remove_aux_verbs_from_triplet(self):
+        verbs = self.triplet[1]._findDownReccursive(tag="VB", until=self.triplet[2])
+        for verb in verbs:
+            if (verb.text.lower() == u'be' or verb.text.lower() == u'do' or verb.text.lower() == u'have'):
+                parent = verb.delete_node() 
+                parent.set_cached_text_for_parents(None)
+        self.verb = [verb for verb in self.triplet[1]._findDownReccursive(tag="VB", until=self.triplet[2]) if verb.text]
+        if self.triplet[1].getTextOfNotTagOnly('N'):
+            self.final_verbal_phrase = self.triplet[1].getTextOfNotTagOnly('N') + self.preposition
+        return self.triplet
+
+
+    def remove_modal_verbs(self):
+        modal_verbs = self.triplet[1]._findDownReccursive(tag="MD", until=self.triplet[2])
+        for current_node in modal_verbs:
+            parent = current_node.delete_node()
+            parent.set_cached_text_for_parents(None)
+        return self.triplet
+
+    @staticmethod
+    def normalize_verbs(verbs):
+        from nltk.stem.wordnet import WordNetLemmatizer
+        lemmatizer = WordNetLemmatizer()
+        return [lemmatizer.lemmatize(verb, 'v') for verb in verbs]
+
+""" 
+Clean, normalize the triplets that are obtained for a concepts pair.
+Function that is required for a cleaning
+  - remove modal verbs
+  - normalize verbs in triplet
+  - remove have, be, do from the verbal phrase
+"""
+def clean_triplets(triplets):
+    cleaned_triplets = []
+    for triplet in triplets:
+        cleaned_triplet = CleanTriplet(triplet)
+        cleaned_triplet.remove_modal_verbs()
+        cleaned_triplet.normalize_triplet()
+        cleaned_triplet.remove_aux_verbs_from_triplet()
+        cleaned_triplet.identify_preposition()
+        if CleanTriplet.is_alphanumeric(cleaned_triplet.final_verbal_phrase):
+            cleaned_triplets.append(cleaned_triplet)
+    return cleaned_triplets
+
+
+
+
+
+
+
+
+
+

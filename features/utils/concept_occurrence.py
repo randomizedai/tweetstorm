@@ -295,9 +295,14 @@ def read_from_multiple_files(directory):
 			tweets[tweet['url']] = {'text' : tweet['content']}
 	return tweets
 
-def articles_to_map(path_list, path, pages=(0,10) ):
+def articles_to_map(path_list, path, pages=(0,10), article_ids=None):
 	import json, urllib2
 	articles = {}
+	if article_ids is not None:
+		for art_id in article_ids:
+			page = json.load(urllib2.urlopen(path + str(art_id)))
+			articles[str(art_id)] = {'title': page['title'], 'body' : page['plain_text']}
+		return articles
 	next = path_list
 	counter = pages[0]
 	if len(pages) == 0:

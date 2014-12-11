@@ -92,7 +92,7 @@ class ParseTreeNode:
         for i in ignore:
             if node.tag == i:
                 return None
-        if node.tag == tag:
+        if node.tag.startswith(tag):
             return node
         else:
             for child in node.children:
@@ -100,6 +100,23 @@ class ParseTreeNode:
                 if result is not None:
                     return result
         return None
+
+    def _findDownReccursive(self, tag='NP', ignore=[], until=None):
+        queue = [self]
+        tags = []
+        while queue:
+            current = queue.pop(0)
+            if current == until:
+                break
+            if current.tag.startswith(tag):
+                tags.append(current)
+            queue.extend(current.children)
+        return tags
+
+    def delete_node(self):
+        self.parent.children.remove(self)
+        self.parent.children.extend(self.children)
+        return self.parent
 
     def findNpVpNp(self):
         s = self._findUp(tag='S')
@@ -135,6 +152,12 @@ class ParseTreeNode:
         for child in self.children:
             child._textNotTag_visitor(tag, list)
 
+    def set_cached_text_for_parents(self, cached_text):
+        self.cachedText = cached_text
+        current = self
+        while current.parent is not None:
+            current.parent.cachedText = cached_text
+            current = current.parent
 
     @staticmethod
     def parse(line):
@@ -172,4 +195,5 @@ class ParseTreeNode:
                     text += line[left]
                     left += 1
                 node.text = text
+        # TODO: Add parsing of the dependency tree
         return node, left + 1

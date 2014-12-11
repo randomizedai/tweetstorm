@@ -103,7 +103,7 @@ def main(file_type, text, concepts_to_find, verbal_map, labels_map, hierarchy, t
     subj_representatives = [l.value for l in tag_list if l.value in subj_to_find]
     if len(obj_representatives) == 0 or len(subj_representatives) == 0:
     # if len(set([defined_concepts[l.value][1] for l in tag_list if l.value in topics[concepts_to_find[0]].keys() ] )) < 2:
-        return indicator
+        return indicator, [l.value for l in tag_list]
 
     dot_list = detect_sentences(text)
     tag_tuple_list = [(l.value, l.start, l.end) for l in tag_list]
@@ -161,7 +161,7 @@ def main(file_type, text, concepts_to_find, verbal_map, labels_map, hierarchy, t
                     # print "added count for hashes", count_hash_mention
                 count_mention_ = [el for el in sorted_tag_list_syn[i+1:k] ]
                 if len(count_mention_) < 2:
-                    return indicator
+                    return indicator, [l.value for l in tag_list]
                 count_with_sentence_with_conceps += k - 1 - i + count_hash_mention
                 # print "overall count added", k - 1 - i + count_hash_mention
                 if i < k - 2 and len(set([l[0] for l in sorted_tag_list_syn[i+1:k]])) > 1:
@@ -194,30 +194,37 @@ def main(file_type, text, concepts_to_find, verbal_map, labels_map, hierarchy, t
     indicator['occurrence_of_s_and_o'] = float(count_with_sentence_with_both_conceps) / num_of_sentence
     indicator['occurrence_of_s_and_p_and_o'] = float(count_with_sentence_with_both_conceps_predicate) / num_of_sentence
 
-    return indicator
+    return indicator, [l.value for l in tag_list]
 
 def compute_indicators_inner(file_type, text, title, abstract, id_element, verbal_map, triplets, labels_map, hierarchy, topics):
     total_score = 1 #sum([v for k, v in weight.iteritems()])
     res_ = {}
     res_[id_element] = []
+    terms_per_issues = {}
+    terms_per_issues[id_element] = {}
     for key, value in triplets.items():
-        indicator_body = main(file_type = file_type, text=text, concepts_to_find=value, verbal_map=verbal_map, labels_map=labels_map, hierarchy=hierarchy, topics=topics)
+        indicator_body, terms_per_issue = main(file_type = file_type, text=text, concepts_to_find=value, verbal_map=verbal_map, labels_map=labels_map, hierarchy=hierarchy, topics=topics)
         index_body = sum([weight[k] * v for k, v in indicator_body.iteritems()]) / total_score
         index_title = 0.0
         index_abstract = 0.0
         if title:
-            indicator_title = main(file_type = file_type, text=title, concepts_to_find=value, verbal_map=verbal_map, labels_map=labels_map, hierarchy=hierarchy, topics=topics)
+            indicator_title, t = main(file_type = file_type, text=title, concepts_to_find=value, verbal_map=verbal_map, labels_map=labels_map, hierarchy=hierarchy, topics=topics)
+            terms_per_issue.extend(t)
             index_title = sum([weight[k] * v for k, v in indicator_title.iteritems()]) / total_score
         if abstract:
-            indicator_abstract = main(file_type = file_type, text=abstract, concepts_to_find=value, verbal_map=verbal_map, labels_map=labels_map, hierarchy=hierarchy, topics=topics)
+            indicator_abstract, t = main(file_type = file_type, text=abstract, concepts_to_find=value, verbal_map=verbal_map, labels_map=labels_map, hierarchy=hierarchy, topics=topics)
+            terms_per_issue.extend(t)
             index_abstract = sum([weight[k] * v for k, v in indicator_abstract.iteritems()]) / total_score
         index = weight['index_body'] * index_body \
               + weight['index_title'] * index_title \
               + weight['index_abstract'] * index_abstract
         if index > 0:
             res_[id_element].append([key, index])
+            terms_per_issues[id_element][key] = terms_per_issue
     if res_[id_element]:
-        return res_
+        return res_, terms_per_issues
+    else:
+        return None, None
 
 # Output: issue_id : [obj_norm_name; subj_norm_name; predicate_name; obj; subj]
 def issues_to_map(path):
@@ -251,7 +258,7 @@ def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract
         id_element = file_path
 
     # TODO: Check the formal of title and abstract and pass them as text to the function
-    res_ = compute_indicators_inner( 
+    res_, terms_per_issues = compute_indicators_inner( 
         file_type=file_type, 
         text=text, 
         title=title, 
@@ -262,17 +269,7 @@ def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract
         labels_map=labels_map, 
         hierarchy=hierarchy, 
         topics=topics)
-
-    # json_output = json.dumps(res_, indent = 4)
-    # # Add time to the file name
-    # utc_datetime = datetime.datetime.utcnow()
-    # formated_string = utc_datetime.strftime("%Y-%m-%d-%H%MZ")
-    # file_name = os.path.basename(os.path.realpath(file_path))
-    # filename = '%s_%s_%s.json'% (file_type, file_name, formated_string)
-    # f = codecs.open(filename, 'w')
-    # f.write(json_output)
-    # f.close()
-    return res_
+    return res_, terms_per_issues
 
 def rank_resulting_map(result):
     issue_ranking = {}
@@ -288,6 +285,37 @@ def rank_resulting_map(result):
     for k, v in issue_ranking.items():
         print k
         print '[%s]' % '\n '.join(map(str, [(vv[0], vv[1]) for vv in v if vv[1] > 0][0:10]))
+
+def get_occurrences_in_text(indicator, 
+    doc_id,
+    file_type,
+    text, 
+    title, 
+    general_concepts_map,
+    rest_url_extracted_already):
+    from collections import Counter
+    import urllib2, json
+    # TODO!
+    # Get the document terms that are extracted
+    if rest_url_extracted_already is not None:
+        docs = {}
+        docs[doc_id] = {}
+        concepts = json.load(urllib2.urlopen(rest_url_extracted_already+str(doc_id)))
+        if concepts:
+            for concept in concepts:
+                docs[doc_id][concept['concept']['name']] = concept['tf']
+            return docs
+    docs = {}
+    for issue_scores in indicator:
+        if issue_scores[1] > 0:
+            occurrence = ConceptOccurrence(text.lower(), file_type)
+            occurrence.title = title
+            occurrence.get_occurrence_count({}, {}, general_concepts_map)
+            if len(occurrence.preprocessed) > 1:
+                docs[doc_id] = {}
+                terms = Counter(occurrence.preprocessed)
+                docs[doc_id] = dict(terms) #sorted([(k, v) for k,v in terms.items()], key=lambda x:x[1], reverse=True)
+    return docs
 
 # if __name__ == "__main__":
 #     import sys, getopt

@@ -12,6 +12,16 @@ def jaccard(t1, t2):
 	intersection_score = sum([t1[el] + t2[el] for el in list(intersect)])
 	disjunction_score = sum(t1.values()) + sum(t2.values())
 	return float(intersection_score) / disjunction_score
+
+def jaccardGivenScore(t1, t2, score_t1):
+	from sets import Set
+	t1_keys = t1.keys()
+	t2_keys = t2.keys()
+	intersect = Set(t1_keys).intersection(Set(t2_keys))
+	intersection_score = sum([t2[el] for el in list(intersect)]) + score_t1
+	disjunction_score = score_t1 + sum(t2.values())
+	return float(intersection_score) / disjunction_score
+
 """
 [topic_name : {'norm_name': topic_norm_name; "concepts": [(concept_i, concept_norm_name_i, weight_i)] }]
 """
