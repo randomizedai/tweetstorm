@@ -245,7 +245,7 @@ if __name__ == "__main__":
 	import sys, getopt, codecs, time, pickle
 	num_threads = 1
 	num_pages = 1
-	debug = 1
+	debug = 0
 	# Should we check if there are 2 concepts in the sentence before parsing - then 1
 	smart = 0
 	index_to_use = 0
