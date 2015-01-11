@@ -5,7 +5,7 @@ import time
 from tempfile import NamedTemporaryFile
 from outputVerbalPhrase import * 
 import nltk
-nltk.data.path.append('~/nltk_data/')
+nltk.data.path.append('~/nltk_data')
 
 PATH=''
 
