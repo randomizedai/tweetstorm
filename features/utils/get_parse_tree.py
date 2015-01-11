@@ -4,6 +4,8 @@ import codecs
 import time
 from tempfile import NamedTemporaryFile
 from outputVerbalPhrase import * 
+import nltk
+nltk.data.path.append('~/nltk_data/')
 
 PATH=''
 
@@ -76,7 +78,10 @@ def parse_fileTextBlob(location, text=None, path_to_parser="/home/iuliia.proskur
     
     separator = "_____@@@@@_____"
     if smart:
-        f_parse_tree_out = codecs.open(location + ".parse_tree", 'a', 'utf-8')
+        try:
+            f_parse_tree_out = codecs.open(location + ".parse_tree", 'a', 'utf-8')
+        except Exception, e:
+            f_parse_tree_out = codecs.open(location + ".parse_tree", 'w', 'utf-8')
     else:
         f_parse_tree_out = codecs.open(location + ".parse_tree", 'w', 'utf-8')
 

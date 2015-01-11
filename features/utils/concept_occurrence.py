@@ -300,8 +300,11 @@ def articles_to_map(path_list, path, pages=(0,10), article_ids=None):
 	articles = {}
 	if article_ids is not None:
 		for art_id in article_ids:
-			page = json.load(urllib2.urlopen(path + str(art_id)))
-			articles[str(art_id)] = {'title': page['title'], 'body' : page['plain_text']}
+			try:
+				page = json.load(urllib2.urlopen(path + str(art_id)))
+				articles[str(art_id)] = {'title': page['title'], 'body' : page['plain_text']}
+			except Exception, e:
+				continue
 		return articles
 	next = path_list
 	counter = pages[0]

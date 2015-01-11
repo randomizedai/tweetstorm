@@ -1,11 +1,14 @@
 #!/usr/bin/env python
-import os, sys, json, getopt, codecs
+import os, sys, json, getopt, codecs, select
 # python xxx.py -y 'tweet' < tweets_jsons.txt > output.txt 
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(BASE_DIR + '/utils/')
+sys.path.append(BASE_DIR + '/../../../datalib/datalib/')
+from concept_source import read_builtin_concept_literals
 from article_to_issue import *
 from concept_occurrence import *
 import time
+from get_verbal_phrase import simple_cosine_sim
 
 argv = sys.argv[1:]
 try:
@@ -20,9 +23,10 @@ text = None
 abstract = None
 file_path = None
 verbal_path = ""
-num_pages = []
+num_pages = [0,1]
 issue_term_representation = 0
 page_size = str(100)
+article_ids = None
 for opt, arg in opts:
     if opt == '-h':
         print 'article_to_issue.p -f <article/file path> -y <type of the file> -i <title if any> -a <abstract if any> -v <verbal path unless in current directory> [-r (for term representation)]'
@@ -50,11 +54,12 @@ verbal_map = read_verbal_ontology(BASE_DIR + "/../../data/")
 labels_map, hierarchy, topics = read_topic_to_json_from_db(path='http://146.148.70.53/topics/list/?page_size=1000&concepts=1', dir_maps=BASE_DIR+'/../../data/')
 rest_url_extracted_already = 'http://146.148.70.53/concepts/document/'
 result = {}
+lexicon_map = {}
 triplets = issues_to_map(issues)
 if file_type == 'tweet':
     # text should be in format of json to load tweet
     if text == None:
-        for row in sys.stdin:
+        for row in sys.stdin.readlines()[:5]:
             indicator, _ = get_indicator_body_title_abstact(file_path, file_type, row, title, abstract, verbal_map, triplets, labels_map, hierarchy, topics)
             if indicator is None:
                 continue
@@ -64,7 +69,7 @@ if file_type == 'tweet':
         if indicator is not None:
             result.update(indicator)
     print ("\n".join([json.dumps({k:v}) for k, v in result.items()]))
-    exit(1)
+    exit(0)
 elif file_type == 'tweet_db':
     file_type = 'tweet'
     articles = articles_to_map("http://146.148.70.53/documents/list/?type=twitter&full_text=1&page_size=100&page="+str(num_pages[0]+1), "http://146.148.70.53/documents/", num_pages )
@@ -74,9 +79,19 @@ elif file_type == 'tweet_db':
         if indicator is not None:
             result.update(indicator)
 elif file_type == 'news':
-    general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
-    articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&full_text=1&page_size="+page_size+"&page="+str(num_pages[0]+1), "http://146.148.70.53/documents/", num_pages )
+    #TODO: change input of the general concpets here: read_builtin_concept_literals()
+    general_concepts_map = {}
+    for literal, conceptId in read_builtin_concept_literals():
+        lexicon_map[norm_literal(literal)] = (conceptId, literal)
+        general_concepts_map[norm_literal(literal)] = literal
+    # general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
+    if select.select([sys.stdin,],[],[],0.0)[0]:
+        article_ids = [row.rstrip() for row in sys.stdin.readlines()]
+        articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&full_text=1&page_size=100", "http://146.148.70.53/documents/", num_pages, article_ids)
+    else:
+        articles = articles_to_map("http://146.148.70.53/documents/list/?type=web&full_text=1&page_size="+page_size+"&page="+str(num_pages[0]+1), "http://146.148.70.53/documents/", num_pages )
     devotion = {}
+    to_sort_res = {}
     for k, v in articles.items():
         text = v['body']
         title = v['title']
@@ -91,28 +106,45 @@ elif file_type == 'news':
             from synonyms_utils import jaccardGivenScore
             from collections import Counter
             # docs - docs[doc_id]: {k (term_norm): v (count of the term) }
-            news = get_occurrences_in_text(indicator=indicator[doc_id], 
+            news = get_occurrences_in_text(indicator=indicator[doc_id],
                 doc_id=doc_id,
-                file_type=file_type, 
-                text=text, 
-                title=title, 
+                file_type=file_type,
+                text=text,
+                title=title,
                 general_concepts_map=general_concepts_map,
                 rest_url_extracted_already=rest_url_extracted_already)
             # docs - docs[doc_id]: { issue_id : [{k (term_norm): v (count of the term) }] }
-            for k, v in terms_per_issues[doc_id].items():
-                terms_per_issues[doc_id][k] = dict(Counter(v))
-            for k, v in terms_per_issues[doc_id].items():
+            for ka, v in terms_per_issues[doc_id].items():
+                terms_per_issues[doc_id][ka] = dict(Counter(v))
+            for ka, v in terms_per_issues[doc_id].items():
                 if doc_id not in devotion:
                     devotion[doc_id] = {}
-                devotion[doc_id][k] = jaccardGivenScore(terms_per_issues[doc_id][k], news[doc_id], dict(indicator[doc_id])[k])
-            print ">>>>>>>>>>>>>>>>>>>>>>>>>>>"
-            print title.encode('utf-8','replace')   
-            print "Concentration"        
-            print("\n".join([json.dumps({ " ".join([triplets[k][4], triplets[k][2], triplets[k][3]]) :v}) for k, v in devotion[doc_id].items()]))
-            print "Identified issue score"
-            print("\n".join([json.dumps({ " ".join([triplets[k][4], triplets[k][2], triplets[k][3]]) :v}) for k, v in indicator[doc_id]]))
-            print "Terms extracted"
-            print sorted( [ (k,v) for k, v in news[doc_id].items()], key=lambda x:x[1], reverse=True)
+                # devotion[doc_id][ka] = simple_cosine_sim(terms_per_issues[doc_id][ka], news[doc_id])
+                devotion[doc_id][ka] = jaccardGivenScore(terms_per_issues[doc_id][ka], news[doc_id], dict(indicator[doc_id])[ka])
+            for ka, v in devotion[doc_id].items():
+                if ka in to_sort_res:
+                    to_sort_res[ka].append((doc_id, v, sorted( [ (kk,vv) for kk, vv in news[doc_id].items()], key=lambda x:x[1], reverse=True), text, title))
+                else:
+                    to_sort_res[ka] = [(doc_id, v, sorted( [ (kk,vv) for kk, vv in news[doc_id].items()], key=lambda x:x[1], reverse=True), text, title)]
+            # print title.encode('utf-8','replace')
+            # print "Concentration"        
+            # print("\n".join([json.dumps({ " ".join([triplets[k][4], triplets[k][2], triplets[k][3]]) :v}) for k, v in devotion[doc_id].items()]))
+            # print "Identified issue score"
+            # print("\n".join([json.dumps({ " ".join([triplets[k][4], triplets[k][2], triplets[k][3]]) :v}) for k, v in indicator[doc_id]]))
+            # print "Terms extracted"
+            # print sorted( [ (k,v) for k, v in news[doc_id].items()], key=lambda x:x[1], reverse=True)
+            # print text
+    # for k, v in to_sort_res.items():
+    #     print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+    #     print triplets[k][5]
+    #     sorted_x = sorted(v, key = lambda x: x[1], reverse=True)
+    #     for s in sorted_x:
+    #         print "-------------------------------"
+    #         print "<DocumentID>: ", s[0]
+    #         print "<Title>: ", s[4].encode('utf-8','replace')
+    #         print "<Concentration score>: ", s[1]
+    #         print "<Terms extracted>:\n", s[2]
+    #         print "<Text>:\n", s[3].encode('utf-8','replace')
 elif file_type == 'scientific':
     general_concepts_map = load_csv_terms(BASE_DIR + '/../../data/1_climate_keyphrases_aggr_filtered_844') # 1_climate_keyphrases_aggr_filtered_844, amitlist.csv
     articles = articles_to_map("http://146.148.70.53/documents/list/?type=scientific&full_text=1&page_size=" + page_size+"&page="+str(num_pages[0]+1), "http://146.148.70.53/documents/", num_pages )
@@ -143,6 +175,7 @@ elif file_type == 'scientific':
                 if doc_id not in devotion:
                     devotion[doc_id] = {}
                 devotion[doc_id][k] = jaccardGivenScore(terms_per_issues[doc_id][k], arts[doc_id], dict(indicator[doc_id])[k])
+                
 timestr = time.strftime("%Y%m%d/%H/")
 d = BASE_DIR + '/work/' + str(timestr)
 if not os.path.exists(d):
