@@ -37,7 +37,7 @@ def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, d
 	if file_type == 'twitter':
 		id_parse_tree = {}
 		with futures.ProcessPoolExecutor(max_workers=int(num_threads)) as executor:
-			for row in open('fts.json', 'r').readlines()[0:2000]:#sys.stdin: #.readlines()[:120]:
+			for row in open('fts.json', 'r').readlines():#sys.stdin: #.readlines()[:120]:
 				v = json.loads(row)
 				k = v['id_str']
 				text = v['text']
@@ -71,8 +71,9 @@ def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, d
 			text = v['title'] + '\n' + v['body']
 			# if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0:
 			if debug:
-				print "Processing file with parser"
-			parse_fileTextBlob(parse_trees_path + k, text, parser_path, str(k), smart, labels_map, concepts_to_find)
+				print "Processing file with parser", k
+			if not os.path.exists(parse_trees_path + k + '.parse_tree') or os.stat(parse_trees_path + k + '.parse_tree').st_size == 0:
+				parse_fileTextBlob(parse_trees_path + k, text, parser_path, str(k), smart, labels_map, concepts_to_find)
 			id_parse_tree[str(k)] = parse_trees_path + k + '.parse_tree'
 			# id_parse_tree[str(k)] = open(parse_trees_path + k + '.parse_tree', 'r').read()
 		return id_parse_tree
@@ -90,21 +91,33 @@ def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, d
 		return id_parse_tree
 
 def get_statistics(triplets):
-	statistics = {}
+	statistics = {'->':{}, '<-':{}}
 	for el in triplets:
 		words_between = el[1].getText().split(el[2].getText())[0].rstrip()
-		if len(words_between.split(" ")) > 5:
-			verbal = el[1].getTextOfNotTagOnly('N')
-			if verbal in statistics:
-				statistics[verbal] += 1
+		if len(words_between.split(" ")) > 4:
+			verbal = el[1].getTextOfNotTagOnly('N').rstrip()
+			if el[3] == 0:
+				if verbal in statistics['->']:
+					statistics['->'][verbal] += 1
+				else:
+					statistics['->'][verbal] = 1
 			else:
-				statistics[verbal] = 1
+				if verbal in statistics['<-']:
+					statistics['<-'][verbal] += 1
+				else:
+					statistics['<-'][verbal] = 1
 			# print verbal
 		else:
-			if words_between in statistics:
-				statistics[words_between] += 1
+			if el[3] == 0:
+				if words_between in statistics['->']:
+					statistics['->'][words_between] += 1
+				else:
+					statistics['->'][words_between] = 1
 			else:
-				statistics[words_between] = 1
+				if words_between in statistics['<-']:
+					statistics['<-'][words_between] += 1
+				else:
+					statistics['<-'][words_between] = 1
 			# print words_between
 	return statistics
 
@@ -115,11 +128,11 @@ def load_existing_predicates(initial_concepts_to_find, file_type):
 		'r').read() )
 	predicate_map = json.loads(
 		open('%s/work/%s-statistics-%s-%s.json' % (BASE_DIR, file_type, initial_concepts_to_find[0].replace(' ', '_'), initial_concepts_to_find[1].replace(' ', '_') ),
-		'r').readlines()[0] )
+		'r').readlines()[-1] )
 	return predicate_triplets, predicate_map
 
-from scipy.linalg import norm
 def simple_cosine_sim(a, b):
+    from scipy.linalg import norm
     if len(b) < len(a):
         a, b = b, a
 
@@ -148,29 +161,31 @@ def get_computed_statistics_for_s_o(initial_concepts_to_find, file_type):
 			statistics_cleaned_previous[tr.final_verbal_phrase] = 1
 	return predicate_triplets, predicate_map, statistics_previous, statistics_cleaned_previous
 
-def get_object_by_subject_predicate(initial_concepts_to_find, id_parse_trees, file_type, labels_map, debug=0):
+def get_object_by_subject_predicate(initial_concepts_to_find, id_parse_trees, file_type, labels_map, index_to_use, debug=0):
 	separator = "_____@@@@@_____"
 	labels_map_topic, hierarchy, topics = read_topic_to_json_from_db(path='http://146.148.70.53/topics/list/?page_size=1000&concepts=1', dir_maps=BASE_DIR+'/../../data/')
 	predicate_triplets, predicate_map, statistics_previous, statistics_cleaned_previous = get_computed_statistics_for_s_o(initial_concepts_to_find, file_type)
-	subject = initial_concepts_to_find[1]
+	subject = initial_concepts_to_find[index_to_use]
+	print "Subj/Obj for", subject
 	objects_for_s_p = []
 	for k, path_to_parse_trees in id_parse_trees.items():
 		parse_trees = parse_tree_from_file(path_to_parse_trees, separator)
 		for parse_tree_construction in parse_trees:
-			objects_for_s_p.append(
-				find_matched_objects(parse_tree_construction, 
-					subject, 
-					labels_map,
-					statistics_previous, 
-					statistics_cleaned_previous,
-					debug))
+			objects_for_s_p.extend(find_matched_objects(parse_tree_construction, 
+				subject, 
+				labels_map,
+				statistics_previous, 
+				statistics_cleaned_previous,
+				k,
+				debug))
 	objects_for_s_p_f_b = {'front':[], 'back':[]}
 	if debug:
 		print objects_for_s_p
-	for f_b in objects_for_s_p:
-		objects_for_s_p_f_b['front'].extend(f_b['front'])
-		objects_for_s_p_f_b['back'].extend(f_b['back'])
-	return objects_for_s_p_f_b
+	for el in objects_for_s_p:
+		if el:
+			objects_for_s_p_f_b['front'].extend(el['front'])
+			objects_for_s_p_f_b['back'].extend(el['back'])
+	return objects_for_s_p_f_b, objects_for_s_p
 
 
 # Required cython
@@ -230,9 +245,10 @@ if __name__ == "__main__":
 	import sys, getopt, codecs, time, pickle
 	num_threads = 1
 	num_pages = 1
-	debug = 0
+	debug = 1
 	# Should we check if there are 2 concepts in the sentence before parsing - then 1
 	smart = 0
+	index_to_use = 0
 	file_type = 'news'
 	file_path = 'articles/s00114-011-0762-7.txt'
 	concepta = 'Climate change'
@@ -243,14 +259,14 @@ if __name__ == "__main__":
 	subrelations = False
 	objects_to_find = False
 	try:
-		opts, args = getopt.getopt(argv, "hvsot:f:a:b:p:y:n:", ["thread=", "file=", "aconcept=", "bconcept=", "parser=", "file_type=", "num_pages="])
+		opts, args = getopt.getopt(argv, "hvsot:f:a:b:p:y:n:i:", ["thread=", "file=", "aconcept=", "bconcept=", "parser=", "file_type=", "num_pages=", "index="])
 	except getopt.GetoptError:
-		print 'outputVerbalPhrase.py -t <number of threads> -f <article/file path> -y <file_type> -n <num_pages ("from,to")> -a <first concepts> -b <second concept> -p <parser file lexparser.sh; default is /vagrant/stanford-parser-2012-11-12/lexparser.sh>'
+		print 'outputVerbalPhrase.py -t <number of threads> -f <article/file path> -i <index to use for the obj_subj detection> -y <file_type> -n <num_pages ("from,to")> -a <first concepts> -b <second concept> -p <parser file lexparser.sh; default is /vagrant/stanford-parser-2012-11-12/lexparser.sh>'
 		sys.exit(2)
 
 	for opt, arg in opts:
 		if opt == '-h':
-			print 'outputVerbalPhrase.py -t <number of threads> -f <article/file path> -y <file_type> -n <num_pages ("from,to")> -a <first concepts> -b <second concept> -p <parser file lexparser.sh> -v<verbal phrase to find> -s<subrelation to find>'
+			print 'outputVerbalPhrase.py -t <number of threads> -f <article/file path> -i <index to use for the obj_subj detection> -y <file_type> -n <num_pages ("from,to")> -a <first concepts> -b <second concept> -p <parser file lexparser.sh> -v<verbal phrase to find> -s<subrelation to find>'
 			sys.exit()
 		elif opt in ("-t", "--thread"):
 			num_threads = int(arg)
@@ -270,26 +286,36 @@ if __name__ == "__main__":
 			concepta = arg
 		elif opt in ("-b", "--bconcept"):
 			conceptb = arg
+		elif opt in ("-i", "--index"):
+			index_to_use = int(arg)
 		elif opt in ("-p", "--parser"):
 			parser_path = arg
-		if file_type == 'news':
-			smart = 1
+	if file_type == 'news':
+		smart = 1
 
 	output_name_pickle = 'work/%s-statistics-%s-%s.pickle' % (file_type, concepta.replace(' ', '_'), conceptb.replace(' ', '_'))
 	if verbal:
-		if os.path.exists(output_name_pickle):
+		if os.path.exists(output_name_pickle): # and file_type == 'twitter':
 			triplets = pickle.loads( open(output_name_pickle, 'r').read() )
 		else:
 			id_parse_trees = get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug, smart, labels_map, [concepta, conceptb])
 			triplets = parse_triplets(id_parse_trees=id_parse_trees, labels_map=labels_map, concepts_to_find=[concepta, conceptb], parser_path=parser_path, debug=debug)
 		cleaned_triplets = clean_triplets([tr[0] for tr in triplets])
 		statistics = get_statistics([tr[0] for tr in triplets])
-		statistics_cleaned = {}
+		statistics_cleaned = {'->': {}, '<-': {}}
 		for tr in cleaned_triplets:
-			if tr.final_verbal_phrase in statistics_cleaned:
-				statistics_cleaned[tr.final_verbal_phrase] += 1
+			if tr.subject == 0:
+				if tr.final_verbal_phrase in statistics_cleaned['->']:
+					statistics_cleaned['->'][tr.final_verbal_phrase] += 1
+				else:
+					statistics_cleaned['->'][tr.final_verbal_phrase] = 1
 			else:
-				statistics_cleaned[tr.final_verbal_phrase] = 1
+				if tr.final_verbal_phrase in statistics_cleaned['<-']:
+					statistics_cleaned['<-'][tr.final_verbal_phrase] += 1
+				else:
+					statistics_cleaned['<-'][tr.final_verbal_phrase] = 1
+			if tr.negation == True:
+				print tr.final_verbal_phrase
 
 		output_name = 'work/%s-statistics-%s-%s.json' % (file_type, concepta.replace(' ', '_'), conceptb.replace(' ', '_'))
 		timestr = time.strftime("%Y%m%d_%H")
@@ -297,19 +323,41 @@ if __name__ == "__main__":
 		codecs.open(output_name, 'a', 'utf-8').write(json.dumps(statistics))
 		open(output_name_pickle, 'w'). write( pickle.dumps(triplets) )
 		
+		# print ">>>>>>>>>>>>>>>>>>>>>>>>"
+		# print "[Raw] For concepts:", concepta, 'and', conceptb
+		# print "->"
+		# print sorted([(k, v) for k, v in statistics['->'].items()], key=lambda x:x[1], reverse=True)
+		# print "<-"
+		# print sorted([(k, v) for k, v in statistics['<-'].items()], key=lambda x:x[1], reverse=True)
+
 		print ">>>>>>>>>>>>>>>>>>>>>>>>"
-		print "For concepts:", concepta, 'and', conceptb
-		print sorted([(k, v) for k, v in statistics_cleaned.items()], key=lambda x:x[1], reverse=True)
+		print "[Cleaned] For concepts:", concepta, 'and', conceptb
+		print "->"
+		print sorted([(k, v) for k, v in statistics_cleaned['->'].items()], key=lambda x:x[1], reverse=True)
+		print "<-"
+		print sorted([(k, v) for k, v in statistics_cleaned['<-'].items()], key=lambda x:x[1], reverse=True)
 	# Required Subj, Obj to be provided. Together with file_type 
 	if subrelations:
 		id_parse_trees = get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug, smart, labels_map, [concepta, conceptb])
 		get_sub_relation_pairs([concepta, conceptb], id_parse_trees, file_type ,debug=0)
 	if objects_to_find:
-		id_parse_trees = get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug, smart, labels_map, [concepta, conceptb])
-		front_back = get_object_by_subject_predicate([concepta, conceptb], id_parse_trees, file_type, labels_map, debug)
+		output_triplets_pickle_obj_subj = 'work/%s-%d-%d-statistics-%s-%s-%d.pickle' % (file_type, num_pages[0], num_pages[1], concepta.replace(' ', '_'), conceptb.replace(' ', '_'), index_to_use)
+		output_front_back_pickle_obj_subj = 'work/%s-%d-%d-front_back-statistics-%s-%s-%d.pickle' % (file_type, num_pages[0], num_pages[1], concepta.replace(' ', '_'), conceptb.replace(' ', '_'), index_to_use)
+		if file_type != 'twitter' and os.path.exists(output_front_back_pickle_obj_subj) and os.path.exists(output_triplets_pickle_obj_subj):
+			front_back = pickle.loads( open(output_front_back_pickle_obj_subj, 'r').read() )
+			resulting_triplets = pickle.loads( open(output_triplets_pickle_obj_subj, 'r').read() )
+		else:
+			id_parse_trees = get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug, smart, labels_map, [concepta, conceptb])
+			front_back, resulting_triplets = get_object_by_subject_predicate([concepta, conceptb], id_parse_trees, file_type, labels_map, index_to_use, debug)
+			open(output_front_back_pickle_obj_subj, 'w').write( pickle.dumps(front_back) )
+			open(output_triplets_pickle_obj_subj, 'w').write( pickle.dumps(resulting_triplets) )
 		from collections import Counter
 		print "Front"
-		print Counter(front_back['front'])
+		# print Counter(front_back['front'])
+		for k, v in sorted(Counter(front_back['front']).items(), key=lambda x:x[1], reverse=True):
+			print k, v
 		print "Back"
-		print Counter(front_back['back'])
+		# print Counter(front_back['back'])
+		for k, v in sorted(Counter(front_back['back']).items(), key=lambda x:x[1], reverse=True):
+			print k, v
 

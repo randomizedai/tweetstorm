@@ -154,10 +154,14 @@ def main(file_type, text, concepts_to_find, verbal_map, labels_map, hierarchy, t
                             count_hash_mention += 1
                             continue
                         elif len(el) > 3:
-                            if el[3] in obj_representatives:
-                                count_hash_mention += topics[concepts_to_find[0]][el[3]][0]
-                            else:
-                                count_hash_mention += topics[concepts_to_find[1]][el[3]][0]
+                            try:
+                                if el[3] in obj_representatives:
+                                    count_hash_mention += topics[concepts_to_find[0]][el[3]][0]
+                                elif el[3] in subj_representatives:
+                                    count_hash_mention += topics[concepts_to_find[1]][el[3]][0]
+                            except Exception, e:
+                                count_hash_mention += 1
+                                continue
                     # print "added count for hashes", count_hash_mention
                 count_mention_ = [el for el in sorted_tag_list_syn[i+1:k] ]
                 if len(count_mention_) < 2:
@@ -174,11 +178,13 @@ def main(file_type, text, concepts_to_find, verbal_map, labels_map, hierarchy, t
                                 try:
                                     count_with_sentence_with_both_conceps += topics[concepts_to_find[0]][el[3]][0]
                                 except Exception, e:
+                                    count_with_sentence_with_both_conceps += 1
                                     continue
                             else:
                                 try:
                                     count_with_sentence_with_both_conceps += topics[concepts_to_find[1]][el[3]][0]
                                 except Exception, e:
+                                    count_with_sentence_with_both_conceps += 1
                                     continue
                     index = 0 if i < 0 else sorted_tag_list_syn[i][2] + 1
                     sen = text[index:sorted_tag_list_syn[k][2]]
@@ -236,8 +242,9 @@ def issues_to_map(path):
             triplets[issue['id']] = [norm_literal(issue['object']['name']), \
                                         norm_literal(issue['subject']['name']), \
                                         issue['predicate']['name'], \
-                                        issue['object']['name'],
-                                        issue['subject']['name']]
+                                        issue['object']['name'], \
+                                        issue['subject']['name'], \
+                                        issue['name']]
         next = issues['next']
     return triplets
 
@@ -249,9 +256,14 @@ def get_indicator_body_title_abstact(file_path, file_type, text, title, abstract
     if file_type == "tweet":
         if text == None:
             return res_ 
-        tweet = json.loads(text)
-        text = tweet['text']
-        id_element = tweet['id_str']
+        try:
+            tweet = json.loads(text)
+            text = tweet['text']
+            id_element = tweet['id_str']
+        except Exception, e:
+            text = text
+            import hashlib
+            id_element = hashlib.sha224(text).hexdigest()
     else: #elif file_type == "news" or file_type == 'paper':
         if text == None:
             text = codecs.open(file_path, 'r', 'utf-8').read()

@@ -139,25 +139,30 @@ def findNpVpNpPatternFor(node1, node2, debug=0):
     if sibling1 is not None:
         if debug:
             print "Sibling found"
+            print sibling1.tag
             print sibling1.getText()
         if sibling1.tag.startswith('V'):
             return node2, sibling1, node1
     else:
         sibling2 = pnode2.findMyParentSiblingFor(pnode1)
-        if debug:
-            print "Sibling found"
-            print sibling2.getText()
-        if sibling2 is not None and sibling2.tag.startswith('V'):
-            return node1, sibling2, node2
+        if sibling2 is not None:
+            if debug:
+                print "Sibling found"
+                print sibling2.tag
+                print sibling2.getText()
+            if  sibling2.tag.startswith('V'):
+                return node1, sibling2, node2
     return None
 
 # For given list of concepts in the sentence, the function returns
 # the list of concepts pairs to be checked on the presentece of relation between
-def get_pairs_from_concepts(tag_tuple_list):
+def get_pairs_from_concepts(tag_tuple_list, concepts_to_find):
     concepts_map = {}
     new_tag_tuple_map = {}
     concept_names = list(set([l[0] for l in tag_tuple_list]))
     if len(concept_names) == 2:
+        if concept_names[0] != norm_literal(concepts_to_find[0]):
+            concept_names = [concept_names[1], concept_names[0]]
         for con in concept_names:
             concepts_map[con] = 0
             new_tag_tuple_map[con] = []
@@ -171,9 +176,9 @@ def get_pairs_from_concepts(tag_tuple_list):
         for positionA in new_tag_tuple_map[concept_names[0]]:
             for positionB in new_tag_tuple_map[concept_names[1]]:
                 if positionA[1] < positionB[1]:
-                    yield positionA, positionB
+                    yield positionA, positionB, 0
                 else:
-                    yield positionB, positionA
+                    yield positionB, positionA, 1
         
 
 """
@@ -236,20 +241,20 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
             print "Looking for: ", temp_literals
             print tag_tuple_list
             print tag_tuple_list_syn
-        if len(set([l[0] for l in tag_tuple_list_syn])) != 2:
+        if len(set([l[0] for l in tag_tuple_list_syn])) < 2:
             return triplets
 
         # pair = [(('concept1', pos1, pos2, relative_position)),
         #   (('concept2', pos1, pos2, relative_position))]
         # where relative position is (?): ...climate(1) ...climate(2)...
-        for pair in get_pairs_from_concepts(tag_tuple_list_syn):
+        for pair in get_pairs_from_concepts(tag_tuple_list_syn, concepts_to_find):
             if debug:
                 print ">>>>>>>>>>>> Pair detected >>>>>>>>>>>"
                 print parse_tr
                 print pair
                 print sentence[pair[0][1]:pair[0][2]], ";", sentence[pair[1][1]:pair[1][2]]
                 print root.getText()
-                print "-------------"
+                print "<<<<<<<<<<<< Pair detected <<<<<<<<<<<"
             triplet = None
             try:
                 index1 = pair[0][3]
@@ -261,7 +266,7 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
                     print node1.getText()
                 index2 = pair[1][3]
                 occur2 = root.findNodesForConcept(sentence[pair[1][1]:pair[1][2]])
-                while index2 + 1> len(occur2):
+                while index2 + 1 > len(occur2):
                     index2 = index2 - 1
                 node2 = occur2[index2]
                 if debug:
@@ -270,7 +275,7 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
             except Exception, e:
                 print e
             if triplet is not None:
-                triplets.append((triplet, pos1, pos2))
+                triplets.append(((triplet[0], triplet[1], triplet[2], pair[2]), pos1, pos2))
     return triplets
 
 # TODO: add a remote file open function to return its text
@@ -278,12 +283,10 @@ def read_file_remotely_or_localy(file_path):
     import codecs
     return codecs.open(file_path, 'r', 'utf-8').read()
 
-def find_matched_objects(parse_tree_input, subject, labels_map, statistics_previous, statistics_cleaned_previous, debug):
+def find_matched_objects(parse_tree_input, subject, labels_map, statistics_previous, statistics_cleaned_previous, document_id, debug):
     import codecs, re
     from get_parse_tree import preprocessText
-    objects = {}
-    objects['front'] = []
-    objects['back'] = []
+    objects_overall = []
     pos1, pos2, parse_tree = parse_tree_input
     position_of_roots = [m.start() for m in re.finditer('\(ROOT ', parse_tree)]
     if len(position_of_roots) > 1:
@@ -314,7 +317,7 @@ def find_matched_objects(parse_tree_input, subject, labels_map, statistics_previ
             if tree_structure.getText() != ".":
                 root = tree_structure
         if not root:
-            return objects
+            return objects_overall
 
         sentence = preprocessText(root.getText())
 
@@ -335,12 +338,13 @@ def find_matched_objects(parse_tree_input, subject, labels_map, statistics_previ
             print tag_tuple_list
             print tag_tuple_list_syn
         if len(set([l[0] for l in tag_tuple_list_syn])) == 0:
-            return objects
+            return objects_overall
 
         # pair = [(('concept1', pos1, pos2, relative_position)),
         #   (('concept2', pos1, pos2, relative_position))]
         # where relative position is (?): ...climate(1) ...climate(2)...
         for subj in tag_tuple_list_syn:
+            objs = {'front':[], 'back':[], 'triplet':None}
             if debug:
                 print ">>>>>>>>>>>> Concept detected >>>>>>>>>>>"
                 print parse_tr
@@ -354,12 +358,16 @@ def find_matched_objects(parse_tree_input, subject, labels_map, statistics_previ
                 if cleaned_triplet:
                     # if cleaned_triplet[0].final_verbal_phrase in statistics_cleaned_previous.keys():
                     if npvpnp[0] != occur:
-                        if len(npvpnp[0].getText().split(' ')) < 6 or CleanTriplet.is_alphanumeric(npvpnp[0].getText()):
-                            objects['front'].append(npvpnp[0].getText())
+                        if len(npvpnp[0].getText().split(' ')) < 6 and CleanTriplet.is_alphanumeric(npvpnp[0].getText()) and npvpnp[0].tag != 'PRP':
+                            objs['front'].append(npvpnp[0].getText().lower())
+                            objs['triplet'] = (npvpnp[0], npvpnp[1], npvpnp[2], pos1, pos2, document_id)
                     else:
-                        if len(npvpnp[2].getText().split(' ')) < 6 or CleanTriplet.is_alphanumeric(npvpnp[2].getText()):
-                            objects['back'].append(npvpnp[2].getText())
-    return objects
+                        if len(npvpnp[2].getText().split(' ')) < 6 and CleanTriplet.is_alphanumeric(npvpnp[2].getText()) and npvpnp[2].tag != 'PRP':
+                            objs['back'].append(npvpnp[2].getText().lower())
+                            objs['triplet'] = (npvpnp[0], npvpnp[1], npvpnp[2], pos1, pos2, document_id)
+            if objs['triplet'] is not None:
+                objects_overall.append(objs)
+    return objects_overall
 
 class CleanTriplet:
     def __init__(self, triplet):
@@ -371,17 +379,18 @@ class CleanTriplet:
         self.verb = []
         self.final_verbal_phrase = ""
         self.preposition = ""
+        self.subject = self.triplet[3] if len(self.triplet) > 3 else -1
+        self.negation = False
 
     def identify_preposition(self):
         preps = self.triplet[1]._findDownReccursive(tag="PP", until=self.triplet[2])
-        for prep in preps:
-            self.preposition += prep.getTextOfNotTagOnly(tag='N')
-            break
+        self.preposition = ';'.join([prep.getTextOfNotTagOnly(tag='N') for prep in preps])
+        self.final_verbal_phrase = self.final_verbal_phrase.rstrip()
 
     @staticmethod
     def is_alphanumeric(final_verbal_phrase):
         import re
-        valid = re.match('^[\w-]+$', final_verbal_phrase) is not None
+        valid = re.match('^[\w-]+$', final_verbal_phrase.replace(' ', '')) is not None
         return valid
 
     # input: list of verbs
@@ -408,6 +417,10 @@ class CleanTriplet:
             self.final_verbal_phrase = self.triplet[1].getTextOfNotTagOnly('N') + self.preposition
         return self.triplet
 
+    def is_negation(self):
+        if self.final_verbal_phrase:
+            if 'not' in self.final_verbal_phrase.split(' ') or 'no' in self.final_verbal_phrase.split(' ') or "n't" in self.final_verbal_phrase:
+                self.negation = True
 
     def remove_modal_verbs(self):
         modal_verbs = self.triplet[1]._findDownReccursive(tag="MD", until=self.triplet[2])
@@ -421,6 +434,19 @@ class CleanTriplet:
         from nltk.stem.wordnet import WordNetLemmatizer
         lemmatizer = WordNetLemmatizer()
         return [lemmatizer.lemmatize(verb, 'v') for verb in verbs]
+
+    @staticmethod
+    def clean_words_in_between(words_between):
+        import nltk
+        cleaned_words_between = []
+        preposition = []
+        for verb in CleanTriplet.normalize_verbs(words_between.split(' ')):
+            if (verb.lower() != u'be' and verb.lower() != u'do' and verb.lower() != u'have'):
+                if nltk.pos_tag([verb])[0][1] != 'MD':
+                    cleaned_words_between.append(verb)
+                if nltk.pos_tag([verb])[0][1] == 'IN':
+                    preposition.append(verb)
+        return ' '.join(cleaned_words_between), ';'.join(preposition)
 
 """ 
 Clean, normalize the triplets that are obtained for a concepts pair.
@@ -437,6 +463,9 @@ def clean_triplets(triplets):
         cleaned_triplet.normalize_triplet()
         cleaned_triplet.remove_aux_verbs_from_triplet()
         cleaned_triplet.identify_preposition()
+        if cleaned_triplet.final_verbal_phrase == "" and len(cleaned_triplet.words_between.split(' ')) < 5:
+            cleaned_triplet.final_verbal_phrase, cleaned_triplet.preposition = CleanTriplet.clean_words_in_between(cleaned_triplet.words_between)
+        cleaned_triplet.is_negation()
         if CleanTriplet.is_alphanumeric(cleaned_triplet.final_verbal_phrase):
             cleaned_triplets.append(cleaned_triplet)
     return cleaned_triplets
