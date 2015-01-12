@@ -74,20 +74,36 @@ def predicate_synonimization(sentence, verbs_map):
                 break
     return list(set([l for l in predicate_set]))
 
-def main(file_type, text, concepts_to_find, verbal_map, labels_map, hierarchy, topics):
+def norm_literals_list_for_id(id, path="http://146.148.70.53/concepts/", literal_option="/?literals=1"):
+    lits = {}
+    next = path + str(id) + literal_option
+    while next:
+        try:
+            literals = json.load(urllib2.urlopen(next))
+            for literal in literals['literals']:
+                lits[norm_literal(literal['name'])] = literal['name']
+        except Exception, e:
+            return lits
+    return lits
+
+def main(file_type, text, concepts_to_find, verbal_map, labels_map, hierarchy, topics, obj_literals=[], subj_literals=[]):
     import codecs    
     list_to_check = []
     try:
         obj_to_find = [subtopic for subtopic in topics[concepts_to_find[0]].keys()]
         obj_to_find.append(concepts_to_find[0])
+        obj_to_find.extend(obj_literals.keys())
     except Exception, e:
         obj_to_find = [concepts_to_find[0]]
+        obj_to_find.extend(obj_literals.keys())
 
     try:
         subj_to_find = [subtopic for subtopic in topics[concepts_to_find[1]].keys()]
         subj_to_find.append(concepts_to_find[1])
+        subj_to_find.extend(subj_literals.keys())
     except Exception, e:
         subj_to_find = [concepts_to_find[1]]
+        subj_to_find.extend(subj_literals.keys())
 
     list_to_check = list(set(obj_to_find + subj_to_find))
 
@@ -117,7 +133,7 @@ def main(file_type, text, concepts_to_find, verbal_map, labels_map, hierarchy, t
     for el in sorted_tag_list:
         if el[0] != ".":
             try:
-                if el[0] in concepts_to_find:
+                if el[0] in concepts_to_find or (el[0] in obj_literals.keys() or el[0] in subj_literals.keys()):
                     sorted_tag_list_syn.append(el)
                 elif el[0] in obj_representatives:
                     sorted_tag_list_syn.append( (concepts_to_find[0], el[1], el[2], el[0]) )
@@ -209,6 +225,8 @@ def compute_indicators_inner(file_type, text, title, abstract, id_element, verba
     terms_per_issues = {}
     terms_per_issues[id_element] = {}
     for key, value in triplets.items():
+        obj_literals = norm_literals_list_for_id(value[6])
+        subj_literals = norm_literals_list_for_id(value[7])
         indicator_body, terms_per_issue = main(file_type = file_type, text=text, concepts_to_find=value, verbal_map=verbal_map, labels_map=labels_map, hierarchy=hierarchy, topics=topics)
         index_body = sum([weight[k] * v for k, v in indicator_body.iteritems()]) / total_score
         index_title = 0.0
@@ -244,7 +262,9 @@ def issues_to_map(path):
                                         issue['predicate']['name'], \
                                         issue['object']['name'], \
                                         issue['subject']['name'], \
-                                        issue['name']]
+                                        issue['name'], \
+                                        issue['object']['id'], \
+                                        issue['subject']['id']]
         next = issues['next']
     return triplets
 

@@ -244,7 +244,7 @@ def sort_json_by_occurrence(file_pattern):
 if __name__ == "__main__":
 	import sys, getopt, codecs, time, pickle
 	num_threads = 1
-	num_pages = 1
+	num_pages = map(int, "0,1".split(','))
 	debug = 0
 	# Should we check if there are 2 concepts in the sentence before parsing - then 1
 	smart = 0
@@ -293,7 +293,7 @@ if __name__ == "__main__":
 	if file_type == 'news':
 		smart = 1
 
-	output_name_pickle = 'work/%s-statistics-%s-%s.pickle' % (file_type, concepta.replace(' ', '_'), conceptb.replace(' ', '_'))
+	output_name_pickle = 'work/%s-statistics-%s-%s-%d-%d.pickle' % (file_type, concepta.replace(' ', '_'), conceptb.replace(' ', '_'), num_pages[0], num_pages[1])
 	if verbal:
 		if os.path.exists(output_name_pickle): # and file_type == 'twitter':
 			triplets = pickle.loads( open(output_name_pickle, 'r').read() )
