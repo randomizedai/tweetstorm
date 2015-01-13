@@ -82,8 +82,9 @@ def norm_literals_list_for_id(id, path="http://146.148.70.53/concepts/", literal
             literals = json.load(urllib2.urlopen(next))
             for literal in literals['literals']:
                 lits[norm_literal(literal['name'])] = literal['name']
+            next = literal['next']
         except Exception, e:
-            return lits
+            next = ""
     return lits
 
 def main(file_type, text, concepts_to_find, verbal_map, labels_map, hierarchy, topics, obj_literals=[], subj_literals=[]):
