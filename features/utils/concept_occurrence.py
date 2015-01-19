@@ -257,7 +257,10 @@ def read_topic_to_json_from_db(path, dir_maps='../../data/'):
 					divide_by = float( con['weight'] ) 
 					if divide_by == 0:
 						divide_by = 1
-				topics[topic_norm_name][norm_literal(con['name'])] = [ float(con['weight']) / divide_by, con['name']]
+				if i < 6:
+					topics[topic_norm_name][norm_literal(con['name'])] = [ float(con['weight']) / divide_by, con['name']]
+				else:
+					continue
 			map_[topic_norm_name] = [topic_name, topic_norm_name, p['id']]
 			if topic_norm_name not in hierarchy.keys():
 				n = Node(topic_name)

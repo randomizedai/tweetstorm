@@ -77,34 +77,38 @@ def predicate_synonimization(sentence, verbs_map):
 def norm_literals_list_for_id(id, path="http://146.148.70.53/concepts/", literal_option="/?literals=1"):
     lits = {}
     next = path + str(id) + literal_option
-    while next:
-        try:
-            literals = json.load(urllib2.urlopen(next))
-            for literal in literals['literals']:
-                lits[norm_literal(literal['name'])] = literal['name']
-            next = literal['next']
-        except Exception, e:
-            next = ""
+    try:
+        literals = json.load(urllib2.urlopen(next))
+        for literal in literals['literals']:
+            lits[norm_literal(literal['name'])] = literal['name']
+    except Exception, e:
+        pass
     return lits
 
-def main(file_type, text, concepts_to_find, verbal_map, labels_map, hierarchy, topics, obj_literals=[], subj_literals=[]):
+def main(file_type, text, concepts_to_find, verbal_map, labels_map, hierarchy, topics, obj_literals={}, subj_literals={}):
     import codecs    
     list_to_check = []
+    obj_to_find = []
+    subj_to_find = []
     try:
         obj_to_find = [subtopic for subtopic in topics[concepts_to_find[0]].keys()]
-        obj_to_find.append(concepts_to_find[0])
         obj_to_find.extend(obj_literals.keys())
+        if concepts_to_find[0] not in obj_to_find:
+            obj_to_find.append(concepts_to_find[0])
     except Exception, e:
-        obj_to_find = [concepts_to_find[0]]
         obj_to_find.extend(obj_literals.keys())
+        if concepts_to_find[0] not in obj_to_find:
+            obj_to_find = [concepts_to_find[0]]
 
     try:
         subj_to_find = [subtopic for subtopic in topics[concepts_to_find[1]].keys()]
-        subj_to_find.append(concepts_to_find[1])
         subj_to_find.extend(subj_literals.keys())
+        if concepts_to_find[1] not in subj_to_find:
+            subj_to_find.append(concepts_to_find[1])
     except Exception, e:
-        subj_to_find = [concepts_to_find[1]]
         subj_to_find.extend(subj_literals.keys())
+        if concepts_to_find[1] not in subj_to_find:
+            subj_to_find.append(concepts_to_find[1])
 
     list_to_check = list(set(obj_to_find + subj_to_find))
 
@@ -228,7 +232,15 @@ def compute_indicators_inner(file_type, text, title, abstract, id_element, verba
     for key, value in triplets.items():
         obj_literals = norm_literals_list_for_id(value[6])
         subj_literals = norm_literals_list_for_id(value[7])
-        indicator_body, terms_per_issue = main(file_type = file_type, text=text, concepts_to_find=value, verbal_map=verbal_map, labels_map=labels_map, hierarchy=hierarchy, topics=topics)
+        indicator_body, terms_per_issue = main(file_type = file_type, 
+            text=text, 
+            concepts_to_find=value, 
+            verbal_map=verbal_map, 
+            labels_map=labels_map, 
+            hierarchy=hierarchy, 
+            topics=topics,
+            obj_literals=obj_literals,
+            subj_literals=subj_literals)
         index_body = sum([weight[k] * v for k, v in indicator_body.iteritems()]) / total_score
         index_title = 0.0
         index_abstract = 0.0
