@@ -317,7 +317,7 @@ if __name__ == "__main__":
 			if tr.negation == True:
 				print tr.final_verbal_phrase
 
-		output_name = 'work/%s-statistics-%s-%s.json' % (file_type, concepta.replace(' ', '_'), conceptb.replace(' ', '_'))
+		output_name = 'work/%s-statistics-%s-%s-%d-%d.json' % (file_type, concepta.replace(' ', '_'), conceptb.replace(' ', '_'), num_pages[0], num_pages[1])
 		timestr = time.strftime("%Y%m%d_%H")
 		codecs.open(output_name, 'a', 'utf-8').write("\n" + timestr + "\n")
 		codecs.open(output_name, 'a', 'utf-8').write(json.dumps(statistics))
