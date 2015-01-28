@@ -37,7 +37,7 @@ def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, d
 	if file_type == 'twitter':
 		id_parse_tree = {}
 		with futures.ProcessPoolExecutor(max_workers=int(num_threads)) as executor:
-			for row in open('fts.json', 'r').readlines():#sys.stdin: #.readlines()[:120]:
+			for row in sys.stdin:  # open('fts.json', 'r').readlines():#sys.stdin.readlines()[:120]:
 				v = json.loads(row)
 				k = v['id_str']
 				text = v['text']

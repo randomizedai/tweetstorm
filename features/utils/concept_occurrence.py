@@ -5,6 +5,7 @@ from outputVerbalPhrase import *
 
 class ConceptOccurrence:
 	def __init__(self, text, doc_type):
+		self.id = ""
 		self.title = ""
 		self.abstract = ""
 		self.text = text
@@ -105,18 +106,20 @@ class ConceptOccurrence:
 				res_[k_res] = v_res.weighted
 		return res_
 
-	def update_text_with_underscores(self, tag_tuple_list, general_concepts_map):
+	def update_text_with_underscores(self, tag_tuple_list, general_concepts_map, output_title=0):
 		dict_to_check = dict([(l.encode('utf-8'), 1) for l in general_concepts_map.keys()])
 		tag_list = get_terms_from_string(self.text, dict_to_check)
 		tag_tuple_list_general = [(l.value, l.start, l.end) for l in tag_list]
 		if self.title:
-			tag_list_title = get_terms_from_string(self.title, dict_to_check)
+			tag_list_title = get_terms_from_string(self.title.lower(), dict_to_check)
 			for l in tag_list_title:
 				tag_tuple_list_general.append((l.value, l.start, l.end))
 		self.preprocessed = [el[0] for el in tag_tuple_list_general]
 		for el in tag_tuple_list:
 			if el[0] not in self.preprocessed:
 				self.preprocessed.append(el[0])
+		if output_title == 1:
+			return list(set([l.value for l in tag_list_title]))
 		# sorted_tag_list = sorted(tag_tuple_list, key=lambda x: x[1])
 		# for i, el in enumerate(sorted_tag_list):
 		# 	index = 0 if i == 0 else sorted_tag_list[i-1][2]
@@ -223,7 +226,7 @@ def read_topic_to_json_from_dir(directory):
 					map_[k] = [v[1], topic_norm_name, counter]
 	return map_, hierarchy, topics
 
-#path: http://146.148.70.53/topics/list/
+#path: http://146.148.70.53/topics/list/ ; http://146.148.70.53/topics/list/?page_size=1000&concepts=1
 def read_topic_to_json_from_db(path, dir_maps='../../data/'):
 	import time, datetime, json, urllib2, pickle, sys
 	label_json = dir_maps + 'labels_map.json'
@@ -257,7 +260,7 @@ def read_topic_to_json_from_db(path, dir_maps='../../data/'):
 					divide_by = float( con['weight'] ) 
 					if divide_by == 0:
 						divide_by = 1
-				if i < 6:
+				if i < 50:
 					topics[topic_norm_name][norm_literal(con['name'])] = [ float(con['weight']) / divide_by, con['name']]
 				else:
 					continue

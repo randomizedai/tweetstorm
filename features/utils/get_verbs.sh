@@ -9,7 +9,7 @@ do
     echo "${subarray[0]}"
     echo "${subarray[1]}"
     #python get_verbal_phrase.py -y news -a "${subarray[0]}" -b "${subarray[1]}" -n $1 -i $2 -t 2 -o
-    python get_verbal_phrase.py -y twitter -a "${subarray[0]}" -b "${subarray[1]}" -v < fts.json
+    python get_verbal_phrase.py -y twitter -a "${subarray[0]}" -b "${subarray[1]}" -v < ftswo.json
     #python get_verbal_phrase.py -y twitter -a "${subarray[0]}" -b "${subarray[1]}" -s < fts.json
     #python get_verbal_phrase.py -y twitter -a "${subarray[0]}" -b "${subarray[1]}" -o < fts.json
 done
