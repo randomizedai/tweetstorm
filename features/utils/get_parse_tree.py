@@ -70,13 +70,30 @@ def main():
 
 
 def parse_fileTextBlob(location, text=None, path_to_parser="/home/iuliia.proskurnia/stanford-parser-2012-11-12/lexparser.sh", k=0, smart=0, labels_map=None, concepts_to_find=None):
+    separator = "_____@@@@@_____"
+    if smart == 2:
+        if os.path.exists(location + ".parse_tree"):
+            return location.split('/')[-1], location + ".parse_tree"
+        else:
+            f_parse_tree_out = codecs.open(location + ".parse_tree", 'w', 'utf-8')
+            f = NamedTemporaryFile(delete=False)
+            filename = f.name
+            f.close()
+            with codecs.open(filename, 'w', 'utf-8') as fh:
+                fh.write(text)
+                fh.flush()
+                fh.seek(0)
+                parse_tree = subprocess.Popen([path_to_parser, fh.name], stdout=subprocess.PIPE).stdout.read().decode("utf-8").encode('ascii', 'ignore')
+            os.unlink(filename)
+            f_parse_tree_out.write('%s%s%d_%d%s%s%s%s\n' % (location, separator, 0, len(text), separator, text, separator, parse_tree.replace('\n', ' ')))
+            return location.split('/')[-1], location + ".parse_tree"
+
     if text is None:
         with codecs.open(location, 'r', 'utf-8') as fh:
             text = fh.read()
     sentence_list = detect_sentenceTextBlob(text)
     num_elems = len(sentence_list)
     
-    separator = "_____@@@@@_____"
     if smart:
         try:
             f_parse_tree_out = codecs.open(location + ".parse_tree", 'a', 'utf-8')

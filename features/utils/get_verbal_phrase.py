@@ -25,7 +25,8 @@ def parse_triplets(id_parse_trees, labels_map, concepts_to_find=['water', 'droug
 				find_matched_verbal_phrase(parse_tree_construction, 
 					concepts_to_find,
 					labels_map,
-					debug)
+					debug,
+					k)
 				)
 	return results
 
@@ -37,9 +38,12 @@ def get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, d
 	if file_type == 'twitter':
 		id_parse_tree = {}
 		with futures.ProcessPoolExecutor(max_workers=int(num_threads)) as executor:
-			for row in sys.stdin:  # open('fts.json', 'r').readlines():#sys.stdin.readlines()[:120]:
-				v = json.loads(row)
-				k = v['id_str']
+			for row in open(BASE_DIR + '/../../data/SI_en_tweets_min_len_25_11k.json', 'r').readlines()[0:11000]: # open('fts.json', 'r').readlines():#sys.stdin.readlines()[:120]:  #sys.stdin:
+				try:
+					v = json.loads(row)
+				except Exception, e:
+					continue
+				k = str(v['id'])
 				text = v['text']
 				if text.startswith('RT'):
 					continue
@@ -123,12 +127,15 @@ def get_statistics(triplets):
 
 def load_existing_predicates(initial_concepts_to_find, file_type):
 	import pickle
-	predicate_triplets = pickle.loads( 
+	try:
+		predicate_triplets = pickle.loads( 
 		open('%s/work/%s-statistics-%s-%s.pickle' % (BASE_DIR, file_type, initial_concepts_to_find[0].replace(' ', '_'), initial_concepts_to_find[1].replace(' ', '_') ),
 		'r').read() )
-	predicate_map = json.loads(
+		predicate_map = json.loads(
 		open('%s/work/%s-statistics-%s-%s.json' % (BASE_DIR, file_type, initial_concepts_to_find[0].replace(' ', '_'), initial_concepts_to_find[1].replace(' ', '_') ),
 		'r').readlines()[-1] )
+	except Exception, e:
+		return [], []
 	return predicate_triplets, predicate_map
 
 def simple_cosine_sim(a, b):
@@ -185,6 +192,10 @@ def get_object_by_subject_predicate(initial_concepts_to_find, id_parse_trees, fi
 		if el:
 			objects_for_s_p_f_b['front'].extend(el['front'])
 			objects_for_s_p_f_b['back'].extend(el['back'])
+	for el in objects_for_s_p:
+		ct = clean_triplets([el['triplet']])
+		if ct:
+			print el['triplet'][0].getText(), ' | ', ct[0].final_verbal_phrase, ' | ', el['triplet'][2].getText()
 	return objects_for_s_p_f_b, objects_for_s_p
 
 
@@ -258,6 +269,7 @@ if __name__ == "__main__":
 	verbal = False
 	subrelations = False
 	objects_to_find = False
+	noun_modifier = False
 	try:
 		opts, args = getopt.getopt(argv, "hvsot:f:a:b:p:y:n:i:", ["thread=", "file=", "aconcept=", "bconcept=", "parser=", "file_type=", "num_pages=", "index="])
 	except getopt.GetoptError:
@@ -290,6 +302,8 @@ if __name__ == "__main__":
 			index_to_use = int(arg)
 		elif opt in ("-p", "--parser"):
 			parser_path = arg
+		elif opt in ("-m", "--modifier_noun"):
+			noun_modifier = True
 	if file_type == 'news':
 		smart = 1
 
@@ -361,3 +375,9 @@ if __name__ == "__main__":
 		for k, v in sorted(Counter(front_back['back']).items(), key=lambda x:x[1], reverse=True):
 			print k, v
 
+	if noun_modifier:
+		if os.path.exists(output_name_pickle): # and file_type == 'twitter':
+			triplets = pickle.loads( open(output_name_pickle, 'r').read() )
+		else:
+			id_parse_trees = get_input_ready(file_path, file_type, num_pages, num_threads, parser_path, debug, smart, labels_map, [concepta, conceptb])
+			triplets = parse_triplets(id_parse_trees=id_parse_trees, labels_map=labels_map, concepts_to_find=[concepta, conceptb], parser_path=parser_path, debug=debug)

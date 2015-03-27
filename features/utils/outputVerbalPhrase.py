@@ -186,7 +186,7 @@ Function to be run in parallel
 Input: Given the text of the file, sentence positions and parse tree as parse_tree_input  and concepts to find
 Output: ((concept1, verbal phrase, concept2), positions of the sentence)
 """
-def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, debug):
+def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, debug, parse_tree_id=None):
     import codecs, re
     from get_parse_tree import preprocessText
     triplets = []
@@ -275,7 +275,7 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
             except Exception, e:
                 print e
             if triplet is not None:
-                triplets.append(((triplet[0], triplet[1], triplet[2], pair[2]), pos1, pos2))
+                triplets.append(((triplet[0], triplet[1], triplet[2], pair[2]), pos1, pos2, parse_tree_id))
     return triplets
 
 # TODO: add a remote file open function to return its text
