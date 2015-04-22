@@ -3,6 +3,10 @@ sys.path.append(".")
 sys.path.append("/opt/texpp")
 from outputVerbalPhrase import * 
 
+"""
+Computation of the concepts occurrences 
+considering the possible hierarchical structure of the concepts.
+"""
 class ConceptOccurrence:
 	def __init__(self, text, doc_type):
 		self.id = ""
@@ -17,6 +21,7 @@ class ConceptOccurrence:
 		str_ = ';'.join(map(str, [(k, v) for k, v in self.occurrence_map.items()]))
 		return "%s\n%s\n%s" % (self.text.encode('utf-8'), self.preprocessed.encode('utf-8'), str_)
 
+	# Reading concepts hierarchies, topic vectors etc
 	def struct_to_map(self, hierarchy, topics, manual_hierarchy):
 		res = {}
 		if self.occurrence_map:
@@ -34,7 +39,7 @@ class ConceptOccurrence:
 				res['hierarchy_labels'] = []
 		return res
 
-
+	# Was used for issue detection. old version.
 	def compute_score_for_manual_topics_hierarcy(self, topics_scores, manual_hierarchy):
 		import json, os, urllib2, json
 		# path = os.path.dirname(os.path.realpath(__file__)) + "/../../data/topics_hierarchy.json"
@@ -63,7 +68,7 @@ class ConceptOccurrence:
 					queue.append((k_v, v_v, id_v))
 		return manual_weights
 
-
+	# can be deprecated
 	def walkBfs(self, curr_node, topics, hierarchy):
 		# TODO: use hierarchy to access the nodes
 		queue = [curr_node]
@@ -81,6 +86,7 @@ class ConceptOccurrence:
 						parent.weighted += parent.accumulated * topics[parent.norm_name][current.norm_name][0]
 					queue.append(parent)
 
+	# can be deprecated
 	def compute_hierarchy_scores_for_labels(self, hierarchy, topics):
 		# TODO: Make a BFS to compute the hierarchy score
 		import copy
@@ -106,6 +112,7 @@ class ConceptOccurrence:
 				res_[k_res] = v_res.weighted
 		return res_
 
+	# can be deprecated
 	def update_text_with_underscores(self, tag_tuple_list, general_concepts_map, output_title=0):
 		dict_to_check = dict([(l.encode('utf-8'), 1) for l in general_concepts_map.keys()])
 		tag_list = get_terms_from_string(self.text, dict_to_check)
@@ -132,6 +139,7 @@ class ConceptOccurrence:
 	labels_map is a map with terms and their synonyms
 	labels_map = {norm_name: (norm, norm_name_of_main_concept)}
 	"""
+	# can be deprecated
 	def process_text_with_occurrence(self, text, labels_map, general_concepts_map, multiplier=1, include_hash=1):
 		dict_to_check = dict([(l.encode('utf-8'), 1) for l in labels_map.keys()])
 		tag_list = get_terms_from_string(text, dict_to_check)
@@ -158,6 +166,7 @@ class ConceptOccurrence:
 	Important: Hierarchy is a list where dependent elements should be places further:
 	if a ->b,c,d and d -> e,g, then hierarchy should be [d ->e,g; a ->d,...]
 	"""
+	# can be deprecated
 	def get_occurrence_count(self, labels_map, hierarchy, general_concepts_map):
 		self.process_text_with_occurrence(self.text, labels_map, general_concepts_map, multiplier = 1)
 		if self.title:
@@ -183,7 +192,7 @@ class Node:
 		self.accumulated = 0
 		self.weighted = 0.0
 
-
+# was used for topic, issue detection
 def read_topic_to_json_from_dir(directory):
 	import glob, json
 	from os.path import basename
@@ -226,6 +235,7 @@ def read_topic_to_json_from_dir(directory):
 					map_[k] = [v[1], topic_norm_name, counter]
 	return map_, hierarchy, topics
 
+# can be deprecated
 #path: http://146.148.70.53/topics/list/ ; http://146.148.70.53/topics/list/?page_size=1000&concepts=1
 def read_topic_to_json_from_db(path, dir_maps='../../data/'):
 	import time, datetime, json, urllib2, pickle, sys
@@ -301,6 +311,7 @@ def read_from_multiple_files(directory):
 			tweets[tweet['url']] = {'text' : tweet['content']}
 	return tweets
 
+# tranlates read articels from the rest api of DB to the map
 def articles_to_map(path_list, path, pages=(0,10), article_ids=None):
 	import json, urllib2
 	articles = {}
@@ -366,6 +377,7 @@ def load_csv_terms(path):
 			terms_map[norm] = el
 	return terms_map
 
+# was used to play with llda
 def llda_learn(output_folder, corpus, labels, semisupervised=False):
 	import os, codecs
 	from tempfile import NamedTemporaryFile
@@ -474,6 +486,7 @@ def read_topic_vectors(model_path, general_concepts_map, labels_map, file_type="
 						topic_map[current_topic]["concepts"].append( [element, el[1], score] )
 	return topic_map
 
+# was used for topic detection things
 def rank_element_to_topics(model_path, labels_map, docs_occurrence, tweets_map={}):
 	import csv
 	labels = {}

@@ -9,6 +9,7 @@ nltk.data.path.append('~/nltk_data')
 
 PATH=''
 
+# can be deprecated
 def detect_sentences(text):
     dot_list = []
     for i in xrange(len(text)):
@@ -69,8 +70,12 @@ def main():
         parse_file(location.strip())
 
 
+#this function makes sure that the necessary parse tree is output to the file_name 
+# that will be then used when parse tree is required to be read
 def parse_fileTextBlob(location, text=None, path_to_parser="/home/iuliia.proskurnia/stanford-parser-2012-11-12/lexparser.sh", k=0, smart=0, labels_map=None, concepts_to_find=None):
     separator = "_____@@@@@_____"
+    # smart == 2 is used for the issue discovery
+    # other smart values might be used in some old code - not sure exactly.
     if smart == 2:
         if os.path.exists(location + ".parse_tree"):
             return location.split('/')[-1], location + ".parse_tree"
@@ -83,6 +88,7 @@ def parse_fileTextBlob(location, text=None, path_to_parser="/home/iuliia.proskur
                 fh.write(text)
                 fh.flush()
                 fh.seek(0)
+                # calls stanford parser as subprocess
                 parse_tree = subprocess.Popen([path_to_parser, fh.name], stdout=subprocess.PIPE).stdout.read().decode("utf-8").encode('ascii', 'ignore')
             os.unlink(filename)
             f_parse_tree_out.write('%s%s%d_%d%s%s%s%s\n' % (location, separator, 0, len(text), separator, text, separator, parse_tree.replace('\n', ' ')))

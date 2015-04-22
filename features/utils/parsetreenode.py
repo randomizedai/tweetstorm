@@ -13,6 +13,7 @@ class ParseTreeNode:
         self.children = []
         self.parent = None
 
+    # returns the text of the nodes under the current
     def getText(self):
         if self.cachedText is None:
             textList = []
@@ -55,6 +56,8 @@ class ParseTreeNode:
             if not found:
                 resultList.append(self)
 
+    # Checks if a given node is a sibling of one of my parent. 
+    # like we can check if a word from Np (node) is a siblings of Vp which is a parent of self.
     def findMyParentSiblingFor(self, node):
         if self.parent is None:
             return None
@@ -139,6 +142,7 @@ class ParseTreeNode:
 
         return (np1, vp, np2)
 
+    # returns text of, for example, everything that is not Noun
     def getTextOfNotTagOnly(self, tag):
         textList = []
         self._textNotTag_visitor(tag, textList)
@@ -159,6 +163,7 @@ class ParseTreeNode:
             current.parent.cachedText = cached_text
             current = current.parent
 
+    # from the output parse tree in text - it makes a list of nodes that are in the tree
     @staticmethod
     def parse(line):
         listRoots = []

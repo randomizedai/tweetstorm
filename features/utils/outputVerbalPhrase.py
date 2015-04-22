@@ -35,9 +35,12 @@ knownNotLiterals = dict.fromkeys((
 ))
 
 # Get the list of parse tree for the sentence from the file with parse trees
+# RETURS: list of sentences from the parse file. 
+# [(pos1, pos2, parse_tree), ...]
 def parse_tree_from_file(path_to_parse_trees, separator):
     import os
     # open file to read the parse tree for the sentence
+    # ONLY READ THE FILE LOCALLY FOR NOW
     text = read_file_remotely_or_localy(path_to_parse_trees).rstrip().lstrip()
     # Split the text by the file path
     # dirname = os.path.dirname(os.path.realpath(path_to_parse_trees))
@@ -48,6 +51,7 @@ def parse_tree_from_file(path_to_parse_trees, separator):
     for sen in sentences:
         if sen:
             try:
+                # that is what is stored in the parse file
                 article_name, positions, sentence, parse_tree = sen.split(separator)
                 if positions not in positions_map:
                     positions_map.append(positions)
@@ -69,6 +73,8 @@ def get_stopwords():
     return dict()
 
 # SW like function to get terms from the sentence/articles/text among provided list of concepts
+# aka datalib ahocorasick thing but from texpp
+# should not be used if datalib is used. 
 def get_terms_from_string(sentence, literals):
     """
     Extract terms from a given string of text
@@ -99,6 +105,7 @@ def get_terms_from_string(sentence, literals):
 
 
 # Returns the normalized form of the literal/concept/text
+# uses texpp
 def norm_literal(literal):
     """Return normalized literal form"""
     literal = str(literal.encode('utf-8', 'ignore'))
@@ -112,6 +119,15 @@ Returns:
   Node1
   Predicate which contains Node2 as well
   Node2
+
+First half of the code for this function is simply finds 
+    the beginning of the NP that concepts belong to
+
+Second, it is identified which concepts lays in which part of the NPVP structure
+    that is, first we assume that pnode2 have a parent who has a sibling pnode1 (pnode1.findMyParentSiblingFor(pnode2))
+    if it is true  - this means that pnode2 lays in Np that belong to Vp and that Vp is a sibling for the Np that pnode1 is in.
+    else, opposite
+    
 '''
 # TODO: Add functionality: printing the predicate - 
 # so that to have printed words only between two concepts with a tag V_
@@ -161,18 +177,26 @@ def get_pairs_from_concepts(tag_tuple_list, concepts_to_find):
     new_tag_tuple_map = {}
     concept_names = list(set([l[0] for l in tag_tuple_list]))
     if len(concept_names) == 2:
+        # ensuring relative position of concepts - since their pair might make sense. 
+        # like we r looking for climate change and storm, and not reverse. Might be used for some app
         if concept_names[0] != norm_literal(concepts_to_find[0]):
             concept_names = [concept_names[1], concept_names[0]]
+        # initializing the maps for occurrence of con1 and con2
         for con in concept_names:
             concepts_map[con] = 0
             new_tag_tuple_map[con] = []
+        #
         for el in tag_tuple_list:
             new_tag_tuple_map[el[0]].append((el[0], 
                 el[1], 
                 el[2], 
                 concepts_map[el[0]]))
+            # numerating multiple concepts, like we met twice carbon
             concepts_map[el[0]] = concepts_map[el[0]] + 1
 
+        # OUTPUTS ONLY PAIRS BETWEEN c1' and c2', where ' means that c1 and its synonyms etc 
+        # + adds the relative position of concepts (relative to the initial input positions)
+        # like we asked to give pairs between a and b, and if we have 'b .. a' in a sentence we will add 1 to the yield
         for positionA in new_tag_tuple_map[concept_names[0]]:
             for positionB in new_tag_tuple_map[concept_names[1]]:
                 if positionA[1] < positionB[1]:
@@ -191,6 +215,8 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
     from get_parse_tree import preprocessText
     triplets = []
     pos1, pos2, parse_tree = parse_tree_input
+    # making sure that in a specified parse tree each sentence will be processed separately
+    # if we have 2 roots each for a sentence -> return 2 parse trees
     position_of_roots = [m.start() for m in re.finditer('\(ROOT ', parse_tree)]
     if len(position_of_roots) > 1:
         new_parse_trees = []
@@ -206,6 +232,7 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
     else:
         new_parse_trees = [parse_tree]
 
+    # now, for each parse tree - usually only 1 parse tree
     for parse_tr in new_parse_trees:
         temp_literals = {}
         for term in concepts_to_find:
@@ -225,9 +252,11 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
 
         sentence = preprocessText(root.getText())
 
+        # find occurrence of the concepts we are interested in (if any)
         tag_list = get_terms_from_string(sentence, temp_literals)
         tag_tuple_list = [(l.value, l.start, l.end) for l in tag_list]
 
+        # replace synonyms by the main label in a normlized form - labels_map[...][1]
         tag_tuple_list_syn = []
         for el in tag_tuple_list:
             if el[0] in labels_map:
@@ -247,6 +276,8 @@ def find_matched_verbal_phrase(parse_tree_input, concepts_to_find, labels_map, d
         # pair = [(('concept1', pos1, pos2, relative_position)),
         #   (('concept2', pos1, pos2, relative_position))]
         # where relative position is (?): ...climate(1) ...climate(2)...
+        # For each pair of possible matches do the follwing 
+        # find each concept/text node position and then identify if there NPVP between those nodes.
         for pair in get_pairs_from_concepts(tag_tuple_list_syn, concepts_to_find):
             if debug:
                 print ">>>>>>>>>>>> Pair detected >>>>>>>>>>>"
@@ -283,6 +314,7 @@ def read_file_remotely_or_localy(file_path):
     import codecs
     return codecs.open(file_path, 'r', 'utf-8').read()
 
+# simlar to find_matched_verbal_phrase
 def find_matched_objects(parse_tree_input, subject, labels_map, statistics_previous, statistics_cleaned_previous, document_id, debug):
     import codecs, re
     from get_parse_tree import preprocessText
@@ -382,6 +414,9 @@ class CleanTriplet:
         self.subject = self.triplet[3] if len(self.triplet) > 3 else -1
         self.negation = False
 
+    # Identifies all nodes down the hierarchy with preposition tag
+    # Extracts text of those nodes and stored to the seof.preposition
+    # additionally function updates the final verbal phrases between concepts
     def identify_preposition(self):
         preps = self.triplet[1]._findDownReccursive(tag="PP", until=self.triplet[2])
         self.preposition = ';'.join([prep.getTextOfNotTagOnly(tag='N') for prep in preps])
@@ -393,8 +428,9 @@ class CleanTriplet:
         valid = re.match('^[\w-]+$', final_verbal_phrase.replace(' ', '')) is not None
         return valid
 
-    # input: list of verbs
-    # output: list of tuples (verb, norm_verb)
+    # Seeks for the verbal phrase in the Predicate node of the triplet
+    # verbs in the predicate phrase are normalized and name is updated in the triplet object
+    # output: updated triplet with normalized verbs
     def normalize_triplet(self):
         from nltk.stem.wordnet import WordNetLemmatizer
         lemmatizer = WordNetLemmatizer()
@@ -417,6 +453,7 @@ class CleanTriplet:
             self.final_verbal_phrase = self.triplet[1].getTextOfNotTagOnly('N') + self.preposition
         return self.triplet
 
+    # simplistic version of negation, e.g., 'no', 'not' etc
     def is_negation(self):
         if self.final_verbal_phrase:
             if 'not' in self.final_verbal_phrase.split(' ') or 'no' in self.final_verbal_phrase.split(' ') or "n't" in self.final_verbal_phrase:
@@ -435,6 +472,8 @@ class CleanTriplet:
         lemmatizer = WordNetLemmatizer()
         return [lemmatizer.lemmatize(verb, 'v') for verb in verbs]
 
+    # function could be used if we do not use the parse tree
+    # therefore nltk POS is simply used to detect if the verbs are modal, or words are prepositions etc
     @staticmethod
     def clean_words_in_between(words_between):
         import nltk
